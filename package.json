@@ -16,7 +16,12 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "ci:local": "./scripts/act-local.sh",
+    "ci:list": "act -l",
+    "ci:test": "act -j test --container-architecture linux/amd64",
+    "ci:dry": "act -n",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
