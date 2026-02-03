@@ -1,0 +1,11 @@
+# Act configuration file
+# https://github.com/nektos/act
+
+# Use Node.js image (lighter than full ubuntu)
+-P ubuntu-latest=node:20-bullseye
+
+# Secrets (opcional - para CI con tokens)
+-s GITHUB_TOKEN=ghp_dummy_token_for_testing
+
+# Default workflow
+-W .github/workflows/ci.yml
