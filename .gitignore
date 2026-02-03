@@ -1,0 +1,62 @@
+# Dependencies
+node_modules
+.pnpm-store
+.pnpm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database
+*.db
+*.db-journal
+prisma/*.db
+
+# Vercel
+.vercel
+
+# Testing
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reference materials (not part of the project)
+/transcriptions/
+/transcripts/
+/guide/
+
+# ADW state (generated, not committed)
+/agents/
+/trees/
+
+# Logs
+logs/
+*.log
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
