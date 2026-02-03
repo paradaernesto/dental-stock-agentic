@@ -113,6 +113,31 @@ GitHub Actions runs on every PR and push to `main`/`develop`:
 
 See `.github/workflows/ci.yml`.
 
+### Local CI Testing with Act
+
+Test GitHub Actions locally using [act](https://github.com/nektos/act):
+
+```bash
+# Install act (macOS)
+brew install act
+
+# Run full CI locally
+pnpm ci:local
+# or: ./scripts/act-local.sh
+
+# Run specific job
+pnpm ci:test
+# or: act -j test
+
+# List available jobs
+pnpm ci:list
+
+# Dry run (see what would execute)
+pnpm ci:dry
+```
+
+Requirements: Docker must be running.
+
 ## Scripts Reference
 
 | Command | Description |
