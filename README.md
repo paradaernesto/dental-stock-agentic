@@ -134,7 +134,7 @@ pnpm install
 # Setup environment
 cp .env.example .env
 
-# Setup database
+# Setup database (creates tables)
 pnpm db:push
 
 # Seed with test data (optional)
@@ -146,35 +146,88 @@ pnpm dev
 
 The app will be available at `http://localhost:3000`.
 
+### Database Setup Workflow
+
+For local development, the database file (`prisma/dev.db`) is persistent:
+
+```bash
+# Complete database reset and setup
+rm -f prisma/dev.db && pnpm db:push && pnpm db:seed
+
+# Or use the convenience script
+pnpm db:init  # Runs db:push + db:seed
+```
+
+### Database Health Check
+
+Verify database connectivity:
+
+```bash
+curl http://localhost:3000/api/health/db
+```
+
+Expected response when healthy:
+```json
+{
+  "status": "ok",
+  "database": "connected",
+  "path": "./prisma/dev.db"
+}
+```
+
 ## Deployment
 
 ### Vercel
 
 #### Environment Variables
 
-When deploying to Vercel, you must configure the `DATABASE_URL` environment variable:
+The application auto-configures the database URL for Vercel. You typically **don't need** to set `DATABASE_URL` manually:
 
+- **On Vercel**: Uses `file:/tmp/stock.db` automatically (writable ephemeral storage)
+- **Local development**: Uses `file:./prisma/dev.db` (project directory)
+
+If you want to override the default, add an environment variable:
 1. Go to your Vercel project dashboard
 2. Navigate to **Settings** → **Environment Variables**
-3. Add a new variable:
+3. Add:
    - **Name**: `DATABASE_URL`
-   - **Value**: `file:./prisma/dev.db` (for SQLite)
+   - **Value**: `file:/tmp/stock.db` (or your preferred path)
 
-4. Redeploy your application for changes to take effect
+#### Build Configuration
+
+The build process automatically handles database initialization:
+
+```bash
+# Build script (defined in package.json)
+prisma generate && next build
+```
+
+The database schema is created at runtime on first request (Vercel serverless), so no manual migration step is needed.
+
+#### Deployment Strategies Comparison
+
+| Strategy | Data Persistence | Setup Complexity | Best For |
+|----------|------------------|------------------|----------|
+| **SQLite on Vercel** (default) | ❌ Ephemeral (resets per deploy) | ✅ Minimal | Demos, testing |
+| **SQLite locally** | ✅ Persistent | ✅ Minimal | Development |
+| **PostgreSQL (Neon/Supabase)** | ✅ Persistent | ⚠️ Requires DB setup | Production |
 
 ⚠️ **Important: SQLite Limitations on Vercel**
 
 SQLite on Vercel has significant limitations due to Vercel's serverless architecture:
 
-- **Ephemeral filesystem**: Data written during a request may not persist to the next request
-- **Read-only in most cases**: The filesystem is read-only in many scenarios
-- **Data resets on redeploy**: Your database will be reset every time you deploy
+- **Ephemeral filesystem**: Uses `/tmp` which is cleared between invocations
+- **Read-only filesystem**: Only `/tmp` is writable; app auto-detects and configures this
+- **Data resets on redeploy**: Database is recreated with seed data on each deploy
+- **No persistence between requests**: Each request may see a fresh database
 
-**For production use, consider migrating to PostgreSQL** (Vercel Postgres, Supabase, etc.) which provides persistent storage compatible with serverless environments.
+The application handles these limitations automatically by:
+1. Auto-detecting Vercel environment (`VERCEL=1`)
+2. Using `/tmp/stock.db` as the database path
+3. Bootstrapping schema and seed data on first request
+4. Providing the `/api/health/db` endpoint for monitoring
 
-#### Build Configuration
-
-The application uses a centralized Prisma client (`lib/db.ts`) that provides a safe fallback for `DATABASE_URL`. This ensures the build process completes successfully even if the environment variable is temporarily unavailable during build time.
+**For production use with persistent data, consider migrating to PostgreSQL** (Vercel Postgres, Supabase, Neon, etc.).
 
 ## Project Structure
 
@@ -238,6 +291,8 @@ Requirements: Docker must be running.
 | `pnpm lint` | Run linter |
 | `pnpm db:push` | Push schema to database |
 | `pnpm db:generate` | Generate Prisma client |
+| `pnpm db:seed` | Seed database with sample data |
+| `pnpm db:init` | Initialize database (push + seed) |
 | `pnpm db:studio` | Open Prisma Studio |
 | `python adws/adw_plan_build.py <n>` | Plan + build issue (uses AI_PROVIDER env) |
 

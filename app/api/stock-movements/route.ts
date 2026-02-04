@@ -6,6 +6,11 @@ import {
 } from "@/lib/services/stock-movements";
 import { createStockMovementSchema } from "@/lib/validations/stock-movements";
 import { ZodError } from "zod";
+import {
+  initializeDatabase,
+  formatDatabaseError,
+  isPrismaConnectionError,
+} from "@/lib/db";
 
 /**
  * POST /api/stock-movements
@@ -15,6 +20,19 @@ import { ZodError } from "zod";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Ensure database is initialized (especially important on first request in serverless)
+    const initResult = await initializeDatabase();
+    if (!initResult.success) {
+      console.error("[API /stock-movements] Database initialization failed:", initResult.error);
+      return NextResponse.json(
+        {
+          error: "Database unavailable",
+          details: "Failed to initialize database connection",
+        },
+        { status: 503 }
+      );
+    }
+
     // Parse request body
     const body = await request.json();
 
@@ -76,6 +94,15 @@ export async function POST(request: NextRequest) {
           details: error.flatten().fieldErrors,
         },
         { status: 400 }
+      );
+    }
+
+    // Handle database-specific errors
+    if (isPrismaConnectionError(error)) {
+      const dbError = formatDatabaseError(error);
+      return NextResponse.json(
+        { error: dbError.error, details: dbError.details },
+        { status: 500 }
       );
     }
 
