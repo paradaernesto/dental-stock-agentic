@@ -66,3 +66,6 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+
+# Guide app (legacy/separate project)
+guide/
