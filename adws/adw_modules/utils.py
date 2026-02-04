@@ -41,7 +41,11 @@ def classify_issue(title: str, body: str, labels: list) -> str:
     
     # Check labels first
     for label in labels:
-        label_name = label.get("name", "").lower()
+        # Handle both Pydantic models and dicts
+        if hasattr(label, 'name'):
+            label_name = label.name.lower()
+        else:
+            label_name = label.get("name", "").lower() if isinstance(label, dict) else str(label).lower()
         if "bug" in label_name:
             return "/bug"
         if "feature" in label_name:
