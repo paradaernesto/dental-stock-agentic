@@ -41,34 +41,46 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
       
-      - name: Install Claude Code CLI
+      - name: Install AI Provider CLI
         run: |
-          # Install Claude Code CLI
-          curl -fsSL https://cli.anthropic.com/install.sh | bash
+          AI_PROVIDER="${{ secrets.AI_PROVIDER || 'claude' }}"
+          echo "AI_PROVIDER: $AI_PROVIDER"
           
-          # Find where claude was installed
-          echo "=== Searching for claude binary ==="
-          find $HOME -name "claude" -type f 2>/dev/null | head -5
-          
-          # Check if it's in .local/bin or elsewhere
-          if [ -f "$HOME/.local/bin/claude" ]; then
-            echo "Found in .local/bin"
-            CLAUDE_BIN="$HOME/.local/bin/claude"
-          elif command -v claude &> /dev/null; then
-            CLAUDE_BIN=$(command -v claude)
-            echo "Found in PATH: $CLAUDE_BIN"
+          if [ "$AI_PROVIDER" = "kimi" ]; then
+            echo "=== Installing Kimi CLI ==="
+            pip install kimi-cli
+            KIMI_BIN=$(which kimi)
+            echo "KIMI_BIN=$KIMI_BIN" >> $GITHUB_ENV
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+            "$KIMI_BIN" --version
           else
-            # Try to install via npm as fallback
-            echo "Not found, installing via npm..."
-            npm install -g @anthropic-ai/claude-code
-            CLAUDE_BIN=$(command -v claude)
+            echo "=== Installing Claude Code CLI ==="
+            curl -fsSL https://cli.anthropic.com/install.sh | bash
+            
+            # Find where claude was installed
+            echo "=== Searching for claude binary ==="
+            find $HOME -name "claude" -type f 2>/dev/null | head -5
+            
+            # Check if it's in .local/bin or elsewhere
+            if [ -f "$HOME/.local/bin/claude" ]; then
+              echo "Found in .local/bin"
+              CLAUDE_BIN="$HOME/.local/bin/claude"
+            elif command -v claude &> /dev/null; then
+              CLAUDE_BIN=$(command -v claude)
+              echo "Found in PATH: $CLAUDE_BIN"
+            else
+              # Try to install via npm as fallback
+              echo "Not found, installing via npm..."
+              npm install -g @anthropic-ai/claude-code
+              CLAUDE_BIN=$(command -v claude)
+            fi
+            
+            echo "CLAUDE_BIN=$CLAUDE_BIN" >> $GITHUB_ENV
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+            
+            # Verify
+            "$CLAUDE_BIN" --version
           fi
-          
-          echo "CLAUDE_BIN=$CLAUDE_BIN" >> $GITHUB_ENV
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          
-          # Verify
-          "$CLAUDE_BIN" --version
       
       - name: Run ADW Plan + Build
         env:
