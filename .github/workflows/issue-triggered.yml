@@ -33,15 +33,20 @@ jobs:
       
       - name: Install Claude Code CLI
         run: |
-          # Install latest claude CLI
+          # Install Claude Code CLI
           curl -fsSL https://cli.anthropic.com/install.sh | bash
+          # Add to PATH for subsequent steps
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          # Verify installation
+          ls -la "$HOME/.local/bin/" || echo "Directory not found"
+          "$HOME/.local/bin/claude" --version || echo "Claude not found in .local/bin"
       
       - name: Configure Claude
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          claude config set apiKey "$ANTHROPIC_API_KEY"
+          # Use full path since GITHUB_PATH may not be available in this step
+          "$HOME/.local/bin/claude" config set apiKey "$ANTHROPIC_API_KEY"
       
       - name: Run ADW Plan + Build
         env:
@@ -50,8 +55,10 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          CLAUDE_CODE_PATH: "$HOME/.local/bin/claude"
         run: |
           echo "Processing issue #$ISSUE_NUMBER: $ISSUE_TITLE"
+          export PATH="$HOME/.local/bin:$PATH"
           python adws/adw_plan_build.py "$ISSUE_NUMBER"
       
       - name: Create Pull Request
