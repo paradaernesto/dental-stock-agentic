@@ -17,11 +17,13 @@ from adw_modules.agent import run_slash_command
 
 
 def main():
+    print("[DEBUG] adw_build.py started")
     parser = argparse.ArgumentParser(description="ADW Build - Implement from plan")
     parser.add_argument("issue_number", type=int, help="GitHub issue number")
     parser.add_argument("adw_id", help="ADW ID")
     args = parser.parse_args()
     
+    print(f"[DEBUG] Arguments: issue_number={args.issue_number}, adw_id={args.adw_id}")
     print(f"🔹 ADW ID: {args.adw_id}")
     
     # Load state

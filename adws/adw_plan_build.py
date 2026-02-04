@@ -9,6 +9,8 @@ Usage:
 import sys
 import subprocess
 import argparse
+import os
+from pathlib import Path
 
 
 def main():
@@ -23,14 +25,17 @@ def main():
     # Step 1: Plan
     print("\n📋 PHASE 1: PLAN")
     print("-" * 40)
+    print("[DEBUG] Running: python3 adws/adw_plan.py", args.issue_number)
     result = subprocess.run(
         ["python3", "adws/adw_plan.py", str(args.issue_number)],
         capture_output=False
     )
+    print(f"[DEBUG] Plan finished with return code: {result.returncode}")
     
     if result.returncode != 0:
         print("\n❌ Planning failed")
         return 1
+    print("[DEBUG] Plan completed successfully")
     
     # Get ADW ID from output or find latest
     # For simplicity, we'll list agents directory
@@ -54,10 +59,14 @@ def main():
     # Step 2: Build
     print("\n🔨 PHASE 2: BUILD")
     print("-" * 40)
+    print(f"[DEBUG] Running: python3 adws/adw_build.py {args.issue_number} {adw_id}")
+    print(f"[DEBUG] Current directory: {os.getcwd()}")
+    print(f"[DEBUG] Checking if adw_build.py exists: {Path('adws/adw_build.py').exists()}")
     result = subprocess.run(
         ["python3", "adws/adw_build.py", str(args.issue_number), adw_id],
         capture_output=False
     )
+    print(f"[DEBUG] Build finished with return code: {result.returncode}")
     
     if result.returncode != 0:
         print("\n❌ Build failed")
