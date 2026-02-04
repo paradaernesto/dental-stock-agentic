@@ -77,11 +77,23 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER || 'claude' }}
+          # Claude
           CLAUDE_CODE_PATH: ${{ env.CLAUDE_BIN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Kimi
+          KIMI_CODE_PATH: ${{ env.KIMI_BIN || 'kimi' }}
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
         run: |
           echo "Processing issue #$ISSUE_NUMBER: $ISSUE_TITLE"
-          echo "Using Claude at: $CLAUDE_CODE_PATH"
+          echo "AI Provider: $AI_PROVIDER"
+          
+          if [ "$AI_PROVIDER" = "kimi" ]; then
+            echo "Using Kimi at: $KIMI_CODE_PATH"
+          else
+            echo "Using Claude at: $CLAUDE_CODE_PATH"
+          fi
+          
           which python3
           python3 --version
           ls -la adws/adw_plan_build.py
