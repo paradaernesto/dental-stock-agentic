@@ -76,7 +76,11 @@ jobs:
         run: |
           echo "Processing issue #$ISSUE_NUMBER: $ISSUE_TITLE"
           echo "Using Claude at: $CLAUDE_CODE_PATH"
-          python adws/adw_plan_build.py "$ISSUE_NUMBER"
+          which python3
+          python3 --version
+          ls -la adws/adw_plan_build.py
+          echo "Starting ADW..."
+          python3 adws/adw_plan_build.py "$ISSUE_NUMBER"
       
       - name: Commit, Push and Create PR
         env:
