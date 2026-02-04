@@ -49,13 +49,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { supplyId, type, quantity } = validationResult.data;
+    const { supplyId, type, quantity, reason } = validationResult.data;
 
     // Create the stock movement
     const result = await createStockMovement({
       supplyId,
       type,
       quantity,
+      reason,
     });
 
     return NextResponse.json(

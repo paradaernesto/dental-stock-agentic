@@ -23,6 +23,10 @@ export const createStockMovementSchema = z.object({
     .number()
     .int("Quantity must be an integer")
     .positive("Quantity must be a positive number"),
+  reason: z
+    .string()
+    .max(500, "Reason must be 500 characters or less")
+    .optional(),
 });
 
 export type CreateStockMovementInput = z.infer<typeof createStockMovementSchema>;

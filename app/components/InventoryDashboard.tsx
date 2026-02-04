@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Typography, Alert } from "antd";
 import { DashboardStats } from "./DashboardStats";
 import { SuppliesTable } from "./SuppliesTable";
+import { StockMovementModal } from "./StockMovementModal";
 import type { SupplyDTO, GetSuppliesResult } from "@/lib/types/supplies";
 
 const { Title } = Typography;
@@ -16,31 +17,50 @@ export function InventoryDashboard() {
   const [supplies, setSupplies] = useState<SupplyDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSupply, setSelectedSupply] = useState<SupplyDTO | null>(null);
+
+  const fetchSupplies = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/supplies?page=1&limit=100");
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch supplies: ${response.statusText}`);
+      }
+
+      const data: GetSuppliesResult = await response.json();
+      setSupplies(data.supplies);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchSupplies() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch("/api/supplies?page=1&limit=100");
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch supplies: ${response.statusText}`);
-        }
-
-        const data: GetSuppliesResult = await response.json();
-        setSupplies(data.supplies);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchSupplies();
-  }, []);
+  }, [fetchSupplies]);
+
+  const handleRegisterMovement = (supply: SupplyDTO) => {
+    setSelectedSupply(supply);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedSupply(null);
+  };
+
+  const handleMovementSuccess = () => {
+    setModalOpen(false);
+    setSelectedSupply(null);
+    fetchSupplies();
+  };
 
   // Calculate statistics
   const totalSupplies = supplies.length;
@@ -72,7 +92,18 @@ export function InventoryDashboard() {
         loading={loading}
       />
 
-      <SuppliesTable supplies={supplies} loading={loading} />
+      <SuppliesTable
+        supplies={supplies}
+        loading={loading}
+        onRegisterMovement={handleRegisterMovement}
+      />
+
+      <StockMovementModal
+        supply={selectedSupply}
+        open={modalOpen}
+        onClose={handleModalClose}
+        onSuccess={handleMovementSuccess}
+      />
     </div>
   );
 }

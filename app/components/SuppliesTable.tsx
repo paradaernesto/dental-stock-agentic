@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { Table, Tag } from "antd";
+import { Table, Tag, Button } from "antd";
+import { ArrowRightOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { SupplyDTO } from "@/lib/types/supplies";
 
 export interface SuppliesTableProps {
   supplies: SupplyDTO[];
   loading?: boolean;
+  onRegisterMovement?: (supply: SupplyDTO) => void;
 }
 
 /**
@@ -21,7 +23,11 @@ function isLowStock(supply: SupplyDTO): boolean {
  * AntD Table component for displaying supplies
  * Highlights low-stock items with a red tag
  */
-export function SuppliesTable({ supplies, loading = false }: SuppliesTableProps) {
+export function SuppliesTable({
+  supplies,
+  loading = false,
+  onRegisterMovement,
+}: SuppliesTableProps) {
   const columns: ColumnsType<SupplyDTO> = [
     {
       title: "Name",
@@ -56,6 +62,22 @@ export function SuppliesTable({ supplies, loading = false }: SuppliesTableProps)
       dataIndex: "minStock",
       key: "minStock",
       sorter: (a, b) => a.minStock - b.minStock,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 180,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<ArrowRightOutlined />}
+          onClick={() => onRegisterMovement?.(record)}
+          data-testid={`register-movement-btn-${record.id}`}
+        >
+          Register movement
+        </Button>
+      ),
     },
   ];
 
