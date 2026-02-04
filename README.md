@@ -64,13 +64,22 @@ Pull Request automático
 
 1. **Obtener API Keys:**
    - GitHub Token: https://github.com/settings/tokens (scopes: `repo`, `workflow`)
-   - Anthropic API Key: https://console.anthropic.com/settings/keys
+   - Elige tu AI Provider:
+     - **Claude** (recomendado): https://console.anthropic.com/settings/keys
+     - **Kimi** (alternativa): https://platform.moonshot.cn/
 
 2. **Configurar secrets en el repositorio:**
    ```
    Settings → Secrets and variables → Actions → New repository secret
    
+   # Opcional: elegir provider (default: claude)
+   AI_PROVIDER = claude  # o "kimi"
+   
+   # Para Claude:
    ANTHROPIC_API_KEY = sk-ant-...
+   
+   # Para Kimi:
+   KIMI_API_KEY = sk-kimi-...
    ```
 
 3. **Crear una issue con ADW:**
@@ -85,7 +94,10 @@ Pull Request automático
 ```bash
 # Configurar variables
 cp .env.example .env
-# Editar .env con tus tokens
+# Editar .env con tus tokens (ANTHROPIC_API_KEY o KIMI_API_KEY)
+
+# Configurar provider (claude o kimi)
+export AI_PROVIDER=claude  # o kimi
 
 # Testear workflow de issues localmente
 ./scripts/act-issues.sh 42
@@ -221,12 +233,37 @@ Requirements: Docker must be running.
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Start development server |
-| `pnpm build` | Build for production |
+| `pnpm build` | Build for production (includes prisma generate) |
 | `pnpm test` | Run tests |
 | `pnpm lint` | Run linter |
 | `pnpm db:push` | Push schema to database |
+| `pnpm db:generate` | Generate Prisma client |
 | `pnpm db:studio` | Open Prisma Studio |
-| `python adws/adw_plan_build.py <n>` | Plan + build issue |
+| `python adws/adw_plan_build.py <n>` | Plan + build issue (uses AI_PROVIDER env) |
+
+## AI Providers
+
+ADW soporta dos providers de IA:
+
+| Provider | Ventajas | Configuración |
+|----------|----------|---------------|
+| **Claude** | Mejor para código complejo, tiene comandos slash nativos | `AI_PROVIDER=claude` + `ANTHROPIC_API_KEY` |
+| **Kimi** | Más rápido, buen razonamiento con `--thinking` | `AI_PROVIDER=kimi` + `KIMI_API_KEY` |
+
+### Cambiar de Provider
+
+**Localmente:**
+```bash
+export AI_PROVIDER=kimi  # o claude
+python adws/adw_plan_build.py 2
+```
+
+**En GitHub Actions:**
+Configura el secret `AI_PROVIDER` en Settings → Secrets → Actions.
+
+**Notas:**
+- Kimi requiere configuración adicional en `~/.kimi/config.toml` para la API key
+- El workflow de CI instala automáticamente el CLI correspondiente según `AI_PROVIDER`
 
 ## Contributing (Agentic Style)
 
@@ -238,20 +275,56 @@ Requirements: Docker must be running.
 
 ### Modo Manual (Desarrollo local)
 
-1. **Create a GitHub issue** describing what you need
-2. **Run ADW**: `python adws/adw_plan_build.py <issue-number>`
-3. **Review the generated spec** in `specs/`
-4. **ADW implements** following the spec
-5. **Tests run automatically**
-6. **PR is created** for final review
+1. **Configurar variables de entorno** según tu provider:
 
-### Modo Manual (con Claude CLI):
+   **Para Claude (default):**
+   ```bash
+   export AI_PROVIDER=claude
+   export ANTHROPIC_API_KEY=sk-ant-...
+   export CLAUDE_CODE_PATH=$(which claude)  # opcional
+   ```
 
-1. **Pick a command template** from `.claude/commands/`
-2. **Generate a plan** in `specs/`
-3. **Implement** incrementally
-4. **Test** your changes
-5. **Commit** with clear messages
+   **Para Kimi:**
+   ```bash
+   export AI_PROVIDER=kimi
+   export KIMI_API_KEY=sk-kimi-...
+   export KIMI_CODE_PATH=$(which kimi)  # opcional
+   
+   # Configurar API key en archivo de config
+   mkdir -p ~/.kimi
+   echo 'api_key = "'$KIMI_API_KEY'"' >> ~/.kimi/config.toml
+   ```
+
+2. **Crear una GitHub issue** describiendo lo que necesitas
+3. **Ejecutar ADW**: `python adws/adw_plan_build.py <issue-number>`
+4. **Revisar el spec generado** en `specs/`
+5. **ADW implementa** siguiendo el spec
+6. **Se ejecutan tests automáticamente**
+7. **Se crea la PR** para revisión final
+
+### Modo Manual (con comandos individuales):
+
+Si prefieres controlar cada paso:
+
+```bash
+# Plan: Generar spec
+python adws/adw_plan.py <issue-number>
+
+# Build: Implementar desde el spec
+python adws/adw_build.py <issue-number> <adw-id>
+
+# Test: Ejecutar tests
+python adws/adw_test.py <issue-number> <adw-id>
+
+# Review: Revisar contra el spec
+python adws/adw_review.py <issue-number> <adw-id>
+
+# PR: Crear pull request
+python adws/adw_pr.py <issue-number> <adw-id>
+
+# O todo junto:
+python adws/adw_sdlc.py <issue-number>  # Plan → Build → Test → Review → PR
+```
 
 ## License
 
