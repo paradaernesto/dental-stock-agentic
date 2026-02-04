@@ -35,18 +35,37 @@ jobs:
         run: |
           # Install Claude Code CLI
           curl -fsSL https://cli.anthropic.com/install.sh | bash
-          # Add to PATH for subsequent steps
+          
+          # Find where claude was installed
+          echo "=== Searching for claude binary ==="
+          find $HOME -name "claude" -type f 2>/dev/null | head -5
+          
+          # Check if it's in .local/bin or elsewhere
+          if [ -f "$HOME/.local/bin/claude" ]; then
+            echo "Found in .local/bin"
+            CLAUDE_BIN="$HOME/.local/bin/claude"
+          elif command -v claude &> /dev/null; then
+            CLAUDE_BIN=$(command -v claude)
+            echo "Found in PATH: $CLAUDE_BIN"
+          else
+            # Try to install via npm as fallback
+            echo "Not found, installing via npm..."
+            npm install -g @anthropic-ai/claude-code
+            CLAUDE_BIN=$(command -v claude)
+          fi
+          
+          echo "CLAUDE_BIN=$CLAUDE_BIN" >> $GITHUB_ENV
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          # Verify installation
-          ls -la "$HOME/.local/bin/" || echo "Directory not found"
-          "$HOME/.local/bin/claude" --version || echo "Claude not found in .local/bin"
+          
+          # Verify
+          "$CLAUDE_BIN" --version
       
       - name: Configure Claude
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          # Use full path since GITHUB_PATH may not be available in this step
-          "$HOME/.local/bin/claude" config set apiKey "$ANTHROPIC_API_KEY"
+          # Use the claude binary path from previous step
+          "$CLAUDE_BIN" config set apiKey "$ANTHROPIC_API_KEY"
       
       - name: Run ADW Plan + Build
         env:
@@ -55,10 +74,10 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
-          CLAUDE_CODE_PATH: "$HOME/.local/bin/claude"
+          CLAUDE_CODE_PATH: ${{ env.CLAUDE_BIN }}
         run: |
           echo "Processing issue #$ISSUE_NUMBER: $ISSUE_TITLE"
-          export PATH="$HOME/.local/bin:$PATH"
+          echo "Using Claude at: $CLAUDE_CODE_PATH"
           python adws/adw_plan_build.py "$ISSUE_NUMBER"
       
       - name: Create Pull Request
