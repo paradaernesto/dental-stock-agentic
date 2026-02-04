@@ -154,8 +154,13 @@ class KimiProvider(AIProvider):
         # Interpolate the command template with arguments
         prompt = self._interpolate_command(command, args)
         
-        # Kimi uses -p for prompt and --print for non-interactive mode
-        cmd_parts = [kimi_path, "-p", prompt, "--print"]
+        # Build command with appropriate flags
+        # --print: non-interactive mode (auto-approves all actions like --yolo)
+        # --thinking: enables reasoning mode for better planning/analysis
+        cmd_parts = [kimi_path, "-p", prompt, "--print", "--thinking"]
+        
+        # For implementation commands, we could skip --thinking for speed
+        # but keeping it ensures better code quality
         
         success, output = self._execute(cmd_parts, working_dir, output_file)
         

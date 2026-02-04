@@ -42,6 +42,8 @@ jobs:
         run: pnpm db:generate
       
       - name: Install AI Provider CLI
+        env:
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
         run: |
           AI_PROVIDER="${{ secrets.AI_PROVIDER || 'claude' }}"
           echo "AI_PROVIDER: $AI_PROVIDER"
@@ -50,6 +52,29 @@ jobs:
             echo "=== Installing Kimi CLI ==="
             pip install kimi-cli
             KIMI_BIN=$(which kimi)
+            
+            # Configure Kimi API key
+            mkdir -p ~/.kimi
+            cat > ~/.kimi/config.toml << EOF
+default_model = "kimi-code/kimi-for-coding"
+default_thinking = true
+
+[models."kimi-code/kimi-for-coding"]
+provider = "managed:kimi-code"
+model = "kimi-for-coding"
+max_context_size = 262144
+capabilities = ["image_in", "video_in", "thinking"]
+
+[providers."managed:kimi-code"]
+type = "kimi"
+base_url = "https://api.kimi.com/coding/v1"
+api_key = "$KIMI_API_KEY"
+
+[loop_control]
+max_steps_per_turn = 100
+max_retries_per_step = 3
+EOF
+            
             echo "KIMI_BIN=$KIMI_BIN" >> $GITHUB_ENV
             echo "$HOME/.local/bin" >> $GITHUB_PATH
             "$KIMI_BIN" --version
