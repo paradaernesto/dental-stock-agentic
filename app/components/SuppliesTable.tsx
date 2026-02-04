@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Table, Tag, Button } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, HistoryOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { SupplyDTO } from "@/lib/types/supplies";
 
@@ -10,6 +10,7 @@ export interface SuppliesTableProps {
   supplies: SupplyDTO[];
   loading?: boolean;
   onRegisterMovement?: (supply: SupplyDTO) => void;
+  onViewHistory?: (supply: SupplyDTO) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export function SuppliesTable({
   supplies,
   loading = false,
   onRegisterMovement,
+  onViewHistory,
 }: SuppliesTableProps) {
   const columns: ColumnsType<SupplyDTO> = [
     {
@@ -66,17 +68,27 @@ export function SuppliesTable({
     {
       title: "Actions",
       key: "actions",
-      width: 180,
+      width: 280,
       render: (_, record) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<ArrowRightOutlined />}
-          onClick={() => onRegisterMovement?.(record)}
-          data-testid={`register-movement-btn-${record.id}`}
-        >
-          Register movement
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button
+            type="primary"
+            size="small"
+            icon={<ArrowRightOutlined />}
+            onClick={() => onRegisterMovement?.(record)}
+            data-testid={`register-movement-btn-${record.id}`}
+          >
+            Register movement
+          </Button>
+          <Button
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => onViewHistory?.(record)}
+            data-testid={`view-history-btn-${record.id}`}
+          >
+            View history
+          </Button>
+        </div>
       ),
     },
   ];

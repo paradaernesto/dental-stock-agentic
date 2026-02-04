@@ -5,6 +5,7 @@ import { Typography, Alert } from "antd";
 import { DashboardStats } from "./DashboardStats";
 import { SuppliesTable } from "./SuppliesTable";
 import { StockMovementModal } from "./StockMovementModal";
+import { StockMovementHistoryModal } from "./StockMovementHistoryModal";
 import type { SupplyDTO, GetSuppliesResult } from "@/lib/types/supplies";
 
 const { Title } = Typography;
@@ -19,6 +20,8 @@ export function InventoryDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedSupply, setSelectedSupply] = useState<SupplyDTO | null>(null);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedSupplyForHistory, setSelectedSupplyForHistory] = useState<SupplyDTO | null>(null);
 
   const fetchSupplies = useCallback(async () => {
     try {
@@ -54,6 +57,16 @@ export function InventoryDashboard() {
   const handleModalClose = () => {
     setModalOpen(false);
     setSelectedSupply(null);
+  };
+
+  const handleViewHistory = (supply: SupplyDTO) => {
+    setSelectedSupplyForHistory(supply);
+    setHistoryModalOpen(true);
+  };
+
+  const handleHistoryModalClose = () => {
+    setHistoryModalOpen(false);
+    setSelectedSupplyForHistory(null);
   };
 
   const handleMovementSuccess = () => {
@@ -96,6 +109,7 @@ export function InventoryDashboard() {
         supplies={supplies}
         loading={loading}
         onRegisterMovement={handleRegisterMovement}
+        onViewHistory={handleViewHistory}
       />
 
       <StockMovementModal
@@ -103,6 +117,12 @@ export function InventoryDashboard() {
         open={modalOpen}
         onClose={handleModalClose}
         onSuccess={handleMovementSuccess}
+      />
+
+      <StockMovementHistoryModal
+        supply={selectedSupplyForHistory}
+        open={historyModalOpen}
+        onClose={handleHistoryModalClose}
       />
     </div>
   );

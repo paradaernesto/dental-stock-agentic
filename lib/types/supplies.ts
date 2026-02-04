@@ -35,3 +35,23 @@ export interface GetSuppliesOptions {
   page?: number;
   limit?: number;
 }
+
+/**
+ * StockMovementDTO represents a stock movement entry returned from the API.
+ * Dates are serialized as strings in JSON responses.
+ */
+export interface StockMovementDTO {
+  id: string;
+  supplyId: string;
+  type: "IN" | "OUT";
+  quantity: number;
+  reason?: string | null;
+  createdAt: string;
+}
+
+/**
+ * Result type for stock movement history API response
+ */
+export interface GetStockMovementsResult {
+  movements: StockMovementDTO[];
+}

@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { POST } from "@/app/api/stock-movements/route";
+import { POST, GET } from "@/app/api/stock-movements/route";
 import { NextRequest } from "next/server";
 import { InsufficientStockError, SupplyNotFoundError } from "@/lib/services/stock-movements";
 
 // Mock the stock-movements service
 const mockCreateStockMovement = vi.fn();
+const mockGetStockMovementsBySupplyId = vi.fn();
 
 vi.mock("@/lib/services/stock-movements", () => ({
   createStockMovement: (...args: unknown[]) => mockCreateStockMovement(...args),
+  getStockMovementsBySupplyId: (...args: unknown[]) => mockGetStockMovementsBySupplyId(...args),
   InsufficientStockError: class InsufficientStockError extends Error {
     constructor(message: string = "Insufficient stock") {
       super(message);
@@ -22,7 +24,7 @@ vi.mock("@/lib/services/stock-movements", () => ({
   },
 }));
 
-function createRequest(body: object): NextRequest {
+function createPostRequest(body: object): NextRequest {
   return new NextRequest("http://localhost/api/stock-movements", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,10 +32,23 @@ function createRequest(body: object): NextRequest {
   });
 }
 
+function createGetRequest(supplyId?: string): NextRequest {
+  const url = supplyId
+    ? `http://localhost/api/stock-movements?supplyId=${supplyId}`
+    : "http://localhost/api/stock-movements";
+  return new NextRequest(url, {
+    method: "GET",
+  });
+}
+
 describe("POST /api/stock-movements", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  function createRequest(body: object): NextRequest {
+    return createPostRequest(body);
+  }
 
   it("returns 201 with movement data for successful IN movement", async () => {
     const mockMovement = {
@@ -431,5 +446,130 @@ describe("POST /api/stock-movements", () => {
     expect(response.status).toBe(400);
     expect(data.error).toBe("Invalid input");
     expect(data.details.reason).toBeDefined();
+  });
+});
+
+describe("GET /api/stock-movements", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 200 with movements array for successful fetch", async () => {
+    const mockMovements = [
+      {
+        id: "movement-1",
+        supplyId: "supply-1",
+        type: "IN",
+        quantity: 10,
+        reason: "Initial stock",
+        createdAt: new Date("2024-01-15T10:30:00Z"),
+      },
+      {
+        id: "movement-2",
+        supplyId: "supply-1",
+        type: "OUT",
+        quantity: 5,
+        reason: "Used in surgery",
+        createdAt: new Date("2024-01-16T14:20:00Z"),
+      },
+    ];
+
+    mockGetStockMovementsBySupplyId.mockResolvedValue(mockMovements);
+
+    const request = createGetRequest("supply-1");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.movements).toHaveLength(2);
+    expect(data.movements[0].id).toBe("movement-1");
+    expect(data.movements[1].id).toBe("movement-2");
+    expect(mockGetStockMovementsBySupplyId).toHaveBeenCalledWith("supply-1");
+  });
+
+  it("returns 200 with empty array when no movements exist", async () => {
+    mockGetStockMovementsBySupplyId.mockResolvedValue([]);
+
+    const request = createGetRequest("supply-1");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.movements).toEqual([]);
+    expect(mockGetStockMovementsBySupplyId).toHaveBeenCalledWith("supply-1");
+  });
+
+  it("returns 400 when supplyId query parameter is missing", async () => {
+    const request = createGetRequest();
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("Invalid input");
+    expect(data.details.supplyId).toBeDefined();
+    expect(mockGetStockMovementsBySupplyId).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when supplyId is empty string", async () => {
+    const request = createGetRequest("");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("Invalid input");
+    expect(data.details.supplyId).toBeDefined();
+    expect(mockGetStockMovementsBySupplyId).not.toHaveBeenCalled();
+  });
+
+  it("returns 200 with empty array for non-existent supply", async () => {
+    mockGetStockMovementsBySupplyId.mockResolvedValue([]);
+
+    const request = createGetRequest("non-existent-supply");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.movements).toEqual([]);
+    expect(mockGetStockMovementsBySupplyId).toHaveBeenCalledWith("non-existent-supply");
+  });
+
+  it("returns 500 for database errors", async () => {
+    mockGetStockMovementsBySupplyId.mockRejectedValue(new Error("Database connection failed"));
+
+    const request = createGetRequest("supply-1");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("Internal server error");
+  });
+
+  it("includes all movement fields in response", async () => {
+    const mockMovements = [
+      {
+        id: "movement-1",
+        supplyId: "supply-1",
+        type: "IN",
+        quantity: 10,
+        reason: null,
+        createdAt: new Date("2024-01-15T10:30:00Z"),
+      },
+    ];
+
+    mockGetStockMovementsBySupplyId.mockResolvedValue(mockMovements);
+
+    const request = createGetRequest("supply-1");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.movements[0]).toMatchObject({
+      id: "movement-1",
+      supplyId: "supply-1",
+      type: "IN",
+      quantity: 10,
+      reason: null,
+    });
+    expect(data.movements[0].createdAt).toBeDefined();
   });
 });
