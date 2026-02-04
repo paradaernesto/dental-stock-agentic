@@ -170,23 +170,33 @@ class KimiProvider(AIProvider):
         
         Kimi outputs have format like:
         TextPart(type='text', text='Actual content here')
+        The text may contain analysis followed by the actual spec.
         """
         import re
         
-        # Extract text from TextPart
-        text_parts = []
-        pattern = r"TextPart\([^)]*text='([^']*(?:\\'[^']*)*)'"
-        matches = re.findall(pattern, output, re.DOTALL)
+        # Extract the text from TextPart
+        # Pattern matches: TextPart( type='text', text='...content...' )
+        pattern = r"TextPart\(\s*type='text',\s*text='([\s\S]*?)'\s*\)"
+        matches = re.findall(pattern, output)
         
-        for match in matches:
-            # Unescape escaped quotes
-            text = match.replace("\\'", "'")
-            text_parts.append(text)
+        if matches:
+            # Get the last TextPart
+            text = matches[-1]
+            # Unescape escaped quotes and newlines
+            text = text.replace("\\'", "'").replace('\\n', '\n')
+            
+            # The spec starts at '# Spec' - find and extract from there
+            spec_start = text.find('# Spec')
+            if spec_start != -1:
+                return text[spec_start:]
+            
+            return text
         
-        if text_parts:
-            return "\n\n".join(text_parts)
+        # Fallback: try to find spec directly in output
+        spec_start = output.find('# Spec')
+        if spec_start != -1:
+            return output[spec_start:]
         
-        # If no TextPart found, return original output
         return output
     
     def _interpolate_command(self, command: str, args: list) -> str:
