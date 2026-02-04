@@ -1,0 +1,13 @@
+
+# Guide app (separate project)
+guide/
+
+# ADW tooling
+adws/
+agents/
+specs/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
