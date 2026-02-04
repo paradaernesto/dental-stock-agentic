@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { ConfigProvider } from "antd";
 import "./globals.css";
+import "antd/dist/reset.css";
 
 export const metadata: Metadata = {
   title: "Dental Inventory",
@@ -13,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ConfigProvider>{children}</ConfigProvider>
+      </body>
     </html>
   );
 }

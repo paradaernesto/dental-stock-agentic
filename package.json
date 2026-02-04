@@ -25,7 +25,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "@prisma/client": "^6.0.0",
+    "antd": "^6.2.3",
     "next": "15.5.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
