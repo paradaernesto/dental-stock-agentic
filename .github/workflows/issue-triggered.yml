@@ -131,31 +131,101 @@ jobs:
           echo "Starting ADW..."
           python3 adws/adw_plan_build.py "$ISSUE_NUMBER"
       
-      - name: Verify Implementation
+      - name: Verify Implementation with Auto-Fix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER || 'claude' }}
+          CLAUDE_CODE_PATH: ${{ env.CLAUDE_BIN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          KIMI_CODE_PATH: ${{ env.KIMI_BIN || 'kimi' }}
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
         run: |
-          echo "🔍 Verifying implementation quality..."
+          echo "🔍 Verifying implementation with auto-fix..."
           
-          # Generate Prisma client (ADW may have modified schema)
-          echo "Generating Prisma client..."
-          pnpm db:generate || { echo "❌ Prisma generate failed"; exit 1; }
+          # Get ADW ID for context
+          ADW_ID=$(ls -t agents/ | head -n1)
           
-          # Run lint
-          echo "Running lint..."
-          pnpm lint || { echo "❌ Lint failed"; exit 1; }
+          MAX_ATTEMPTS=3
+          ATTEMPT=1
           
-          # Run typecheck
-          echo "Running typecheck..."
-          pnpm typecheck || { echo "❌ Typecheck failed"; exit 1; }
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo ""
+            echo "🔄 Verification attempt $ATTEMPT/$MAX_ATTEMPTS"
+            echo "----------------------------------------"
+            
+            # Generate Prisma client (ADW may have modified schema)
+            echo "Generating Prisma client..."
+            if ! pnpm db:generate; then
+              echo "❌ Prisma generate failed"
+              FIX_NEEDED=true
+            else
+              FIX_NEEDED=false
+              
+              # Run typecheck
+              echo "Running typecheck..."
+              if ! pnpm typecheck 2>&1 | tee /tmp/typecheck.log; then
+                echo "❌ Typecheck failed"
+                FIX_NEEDED=true
+                ERROR_LOG="/tmp/typecheck.log"
+              fi
+              
+              # Run lint (only if typecheck passed)
+              if [ "$FIX_NEEDED" = "false" ]; then
+                echo "Running lint..."
+                if ! pnpm lint 2>&1 | tee /tmp/lint.log; then
+                  echo "❌ Lint failed"
+                  FIX_NEEDED=true
+                  ERROR_LOG="/tmp/lint.log"
+                fi
+              fi
+              
+              # Run build (only if previous passed)
+              if [ "$FIX_NEEDED" = "false" ]; then
+                echo "Running build..."
+                if ! pnpm build 2>&1 | tee /tmp/build.log; then
+                  echo "❌ Build failed"
+                  FIX_NEEDED=true
+                  ERROR_LOG="/tmp/build.log"
+                fi
+              fi
+              
+              # Run tests (only if build passed)
+              if [ "$FIX_NEEDED" = "false" ]; then
+                echo "Running tests..."
+                if ! pnpm test 2>&1 | tee /tmp/test.log; then
+                  echo "❌ Tests failed"
+                  FIX_NEEDED=true
+                  ERROR_LOG="/tmp/test.log"
+                fi
+              fi
+            fi
+            
+            # If all passed, we're done
+            if [ "$FIX_NEEDED" = "false" ]; then
+              echo ""
+              echo "✅ All checks passed on attempt $ATTEMPT!"
+              exit 0
+            fi
+            
+            # If max attempts reached, fail
+            if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+              echo ""
+              echo "❌ Verification failed after $MAX_ATTEMPTS attempts"
+              exit 1
+            fi
+            
+            # Try to fix the errors
+            echo ""
+            echo "🔧 Asking AI to fix errors..."
+            python3 adws/adw_fix.py "$ERROR_LOG" --adw-id "$ADW_ID" || true
+            
+            # Increment attempt counter
+            ATTEMPT=$((ATTEMPT + 1))
+          done
           
-          # Run tests
-          echo "Running tests..."
-          pnpm test || { echo "❌ Tests failed"; exit 1; }
-          
-          # Run build to ensure it compiles
-          echo "Running build..."
-          pnpm build || { echo "❌ Build failed"; exit 1; }
-          
-          echo "✅ All checks passed!"
+          echo "❌ Verification failed"
+          exit 1
       
       - name: Commit and Push
         env:

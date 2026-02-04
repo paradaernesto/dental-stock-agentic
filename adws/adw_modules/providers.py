@@ -271,6 +271,29 @@ Follow these steps:
 4. Add tests
 5. Update documentation if needed"""
 
+        elif command == "/fix":
+            # Fix command - receives error log and fixes the code
+            error_log = args[0] if len(args) > 0 else ""
+            
+            return f"""You are an expert developer. Fix the following errors in the codebase.
+
+## Error Log
+```
+{error_log}
+```
+
+## Instructions
+1. Carefully analyze the error log
+2. Identify the root cause
+3. Make minimal, focused fixes
+4. Follow existing code patterns
+5. Do NOT add explanatory comments - just fix the code
+
+After fixing, regenerate Prisma client if schema changed:
+- Run `pnpm db:generate`
+
+Fix the errors now."""
+
         else:
             # Generic fallback - just pass the command and args as prompt
             args_str = " ".join(args)
