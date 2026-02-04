@@ -102,6 +102,11 @@ _Any additional notes or context_
         output_file=f"agents/{adw_id}/planner/raw_output.txt"
     )
     
+    if not success:
+        print(f"⚠️  Planner command failed (non-critical)")
+        print(f"   Output: {output[:500] if output else 'No output'}")
+        # Don't fail the whole planning - we already have a basic spec
+    
     # Save state
     state = {
         "adw_id": adw_id,
@@ -121,7 +126,8 @@ _Any additional notes or context_
     print(f"  2. Create branch: git checkout -b {branch_name}")
     print(f"  3. Build: python adws/adw_build.py {args.issue_number} {adw_id}")
     
-    return 0 if success else 1
+    # Return success - basic spec was created even if Claude command failed
+    return 0
 
 
 if __name__ == "__main__":
