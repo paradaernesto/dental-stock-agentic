@@ -4,21 +4,13 @@ import React, { useState, useCallback } from "react";
 import { SearchBar } from "@/app/components/SearchBar";
 import { SuppliesList } from "@/app/components/SuppliesList";
 import { Pagination } from "@/app/components/Pagination";
-import type { Supply } from "@prisma/client";
-
-interface SearchResult {
-  supplies: Supply[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
+import type { GetSuppliesResult } from "@/lib/types/supplies";
 
 export default function SuppliesPage() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult | null>(null);
+  const [results, setResults] = useState<GetSuppliesResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
 
   const performSearch = useCallback(
     async (searchQuery: string, page: number = 1) => {
@@ -43,9 +35,8 @@ export default function SuppliesPage() {
           throw new Error("Failed to search supplies");
         }
 
-        const data: SearchResult = await response.json();
+        const data: GetSuppliesResult = await response.json();
         setResults(data);
-        setCurrentPage(page);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
         setResults(null);

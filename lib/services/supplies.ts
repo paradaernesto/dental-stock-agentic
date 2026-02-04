@@ -83,3 +83,43 @@ export async function getSupplyByCode(code: string): Promise<Supply | null> {
     where: { code },
   });
 }
+
+export interface GetAllSuppliesResult {
+  supplies: Supply[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface GetAllSuppliesOptions {
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Get all supplies with pagination
+ * Returns a list of all supplies ordered by name
+ */
+export async function getAllSupplies({
+  page = 1,
+  limit = 20,
+}: GetAllSuppliesOptions = {}): Promise<GetAllSuppliesResult> {
+  // Get total count for pagination
+  const total = await prisma.supply.count();
+
+  // Fetch supplies with pagination
+  const supplies = await prisma.supply.findMany({
+    orderBy: [{ name: "asc" }, { code: "asc" }],
+    skip: (page - 1) * limit,
+    take: limit,
+  });
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    supplies,
+    total,
+    page,
+    totalPages,
+  };
+}
