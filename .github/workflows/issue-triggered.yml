@@ -88,6 +88,28 @@ jobs:
           echo "Starting ADW..."
           python3 adws/adw_plan_build.py "$ISSUE_NUMBER"
       
+      - name: Verify Implementation
+        run: |
+          echo "🔍 Verifying implementation quality..."
+          
+          # Run lint
+          echo "Running lint..."
+          pnpm lint || { echo "❌ Lint failed"; exit 1; }
+          
+          # Run typecheck
+          echo "Running typecheck..."
+          pnpm typecheck || { echo "❌ Typecheck failed"; exit 1; }
+          
+          # Run tests
+          echo "Running tests..."
+          pnpm test || { echo "❌ Tests failed"; exit 1; }
+          
+          # Run build to ensure it compiles
+          echo "Running build..."
+          pnpm build || { echo "❌ Build failed"; exit 1; }
+          
+          echo "✅ All checks passed!"
+      
       - name: Commit and Push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
