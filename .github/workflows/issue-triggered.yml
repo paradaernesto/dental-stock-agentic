@@ -64,13 +64,6 @@ jobs:
           # Verify
           "$CLAUDE_BIN" --version
       
-      - name: Configure Claude
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          # Use the claude binary path from previous step
-          "$CLAUDE_BIN" config set apiKey "$ANTHROPIC_API_KEY"
-      
       - name: Run ADW Plan + Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,6 +72,7 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           CLAUDE_CODE_PATH: ${{ env.CLAUDE_BIN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           echo "Processing issue #$ISSUE_NUMBER: $ISSUE_TITLE"
           echo "Using Claude at: $CLAUDE_CODE_PATH"
