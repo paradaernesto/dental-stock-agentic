@@ -1,6 +1,3 @@
-// Prisma schema placeholder
-// Will be populated in Spec 002: Database Schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,9 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Placeholder model - will be replaced
-model Example {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
+model Supply {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  quantity    Int      @default(0)
+  minStock    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([code])
 }
