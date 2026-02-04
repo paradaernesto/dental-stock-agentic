@@ -27,7 +27,7 @@ def main():
     print("\n📋 PHASE 1: PLAN")
     print("-" * 40)
     result = subprocess.run(
-        ["python", "adws/adw_plan.py", str(args.issue_number)],
+        ["python3", "adws/adw_plan.py", str(args.issue_number)],
         capture_output=False
     )
     
@@ -47,7 +47,7 @@ def main():
     print("\n🔨 PHASE 2: BUILD")
     print("-" * 40)
     result = subprocess.run(
-        ["python", "adws/adw_build.py", str(args.issue_number), adw_id],
+        ["python3", "adws/adw_build.py", str(args.issue_number), adw_id],
         capture_output=False
     )
     
@@ -60,7 +60,7 @@ def main():
         print("\n🧪 PHASE 3: TEST")
         print("-" * 40)
         result = subprocess.run(
-            ["python", "adws/adw_test.py", str(args.issue_number), adw_id],
+            ["python3", "adws/adw_test.py", str(args.issue_number), adw_id],
             capture_output=False
         )
         
@@ -75,7 +75,7 @@ def main():
         print("\n👁️  PHASE 4: REVIEW")
         print("-" * 40)
         result = subprocess.run(
-            ["python", "adws/adw_review.py", str(args.issue_number), adw_id],
+            ["python3", "adws/adw_review.py", str(args.issue_number), adw_id],
             capture_output=False
         )
         
@@ -88,7 +88,7 @@ def main():
     print("\n📝 PHASE 5: PULL REQUEST")
     print("-" * 40)
     result = subprocess.run(
-        ["python", "adws/adw_pr.py", str(args.issue_number), adw_id],
+        ["python3", "adws/adw_pr.py", str(args.issue_number), adw_id],
         capture_output=False
     )
     
