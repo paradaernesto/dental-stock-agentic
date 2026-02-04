@@ -3,6 +3,7 @@
 import re
 import random
 import string
+import unicodedata
 from typing import Optional
 
 
@@ -12,7 +13,10 @@ def generate_adw_id() -> str:
 
 
 def slugify(text: str) -> str:
-    """Convert text to URL slug."""
+    """Convert text to URL slug (ASCII only for Git branch names)."""
+    # Normalize Unicode to ASCII (remove accents)
+    text = unicodedata.normalize('NFKD', text)
+    text = text.encode('ascii', 'ignore').decode('ascii')
     text = text.lower()
     text = re.sub(r'[^\w\s-]', '', text)
     text = re.sub(r'[-\s]+', '-', text)
