@@ -87,12 +87,12 @@ jobs:
           BRANCH_NAME=$(cat "agents/$ADW_ID/adw_state.json" | grep -o '"branch_name": "[^"]*"' | cut -d'"' -f4)
           
           if [ -z "$BRANCH_NAME" ]; then
-            echo "❌ Could not determine branch name"
+            echo "Could not determine branch name"
             exit 1
           fi
           
-          echo "🔹 ADW ID: $ADW_ID"
-          echo "🌿 Branch: $BRANCH_NAME"
+          echo "ADW ID: $ADW_ID"
+          echo "Branch: $BRANCH_NAME"
           
           # Configure git
           git config user.name "ADW Bot"
@@ -103,31 +103,23 @@ jobs:
           
           # Stage and commit changes
           git add -A
-          git commit -m "feat: implement issue #${{ github.event.issue.number }}
-
-ADW ID: $ADW_ID
-Issue: ${{ github.event.issue.title }}
-
-Changes made by Claude Code ADW" || echo "⚠️ No changes to commit"
+          git commit -m "feat: implement issue #${{ github.event.issue.number }}" -m "ADW ID: $ADW_ID" -m "Issue: ${{ github.event.issue.title }}" || echo "No changes to commit"
           
           # Push branch
-          echo "🚀 Pushing branch..."
+          echo "Pushing branch..."
           git push -u origin "$BRANCH_NAME"
           
           # Create PR using gh CLI
-          echo "📝 Creating pull request..."
+          echo "Creating pull request..."
           gh pr create \
             --title "${{ github.event.issue.title }}" \
-            --body "## Implementation for Issue #${{ github.event.issue.number }}
-
-**ADW ID:** $ADW_ID
-
-This PR implements the changes specified in the ADW spec.
-
-Closes #${{ github.event.issue.number }}" \
+            --body "## Implementation for Issue #${{ github.event.issue.number }}" \
+            --body "ADW ID: $ADW_ID" \
+            --body "This PR implements the changes specified in the ADW spec." \
+            --body "Closes #${{ github.event.issue.number }}" \
             --base main \
             --head "$BRANCH_NAME" \
-            || echo "⚠️ PR may already exist"
+            || echo "PR may already exist"
       
       - name: Comment on issue
         uses: actions/github-script@v7
