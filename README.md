@@ -134,6 +134,36 @@ pnpm dev
 
 The app will be available at `http://localhost:3000`.
 
+## Deployment
+
+### Vercel
+
+#### Environment Variables
+
+When deploying to Vercel, you must configure the `DATABASE_URL` environment variable:
+
+1. Go to your Vercel project dashboard
+2. Navigate to **Settings** → **Environment Variables**
+3. Add a new variable:
+   - **Name**: `DATABASE_URL`
+   - **Value**: `file:./prisma/dev.db` (for SQLite)
+
+4. Redeploy your application for changes to take effect
+
+⚠️ **Important: SQLite Limitations on Vercel**
+
+SQLite on Vercel has significant limitations due to Vercel's serverless architecture:
+
+- **Ephemeral filesystem**: Data written during a request may not persist to the next request
+- **Read-only in most cases**: The filesystem is read-only in many scenarios
+- **Data resets on redeploy**: Your database will be reset every time you deploy
+
+**For production use, consider migrating to PostgreSQL** (Vercel Postgres, Supabase, etc.) which provides persistent storage compatible with serverless environments.
+
+#### Build Configuration
+
+The application uses a centralized Prisma client (`lib/db.ts`) that provides a safe fallback for `DATABASE_URL`. This ensures the build process completes successfully even if the environment variable is temporarily unavailable during build time.
+
 ## Project Structure
 
 ```
