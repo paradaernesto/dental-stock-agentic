@@ -24,7 +24,7 @@ def main():
     print("\n📋 PHASE 1: PLAN")
     print("-" * 40)
     result = subprocess.run(
-        ["python", "adws/adw_plan.py", str(args.issue_number)],
+        ["python3", "adws/adw_plan.py", str(args.issue_number)],
         capture_output=False
     )
     
@@ -55,7 +55,7 @@ def main():
     print("\n🔨 PHASE 2: BUILD")
     print("-" * 40)
     result = subprocess.run(
-        ["python", "adws/adw_build.py", str(args.issue_number), adw_id],
+        ["python3", "adws/adw_build.py", str(args.issue_number), adw_id],
         capture_output=False
     )
     
