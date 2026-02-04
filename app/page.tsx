@@ -1,13 +1,13 @@
+import SupplySearch from "./components/SupplySearch";
+
 export default function Home() {
   return (
-    <main>
+    <main className="main-container">
       <h1>Dental Inventory System</h1>
-      <p>Welcome! The system is bootstrapped and ready for development.</p>
-      <p>
-        <a href="https://github.com/yourusername/dental-inventory">
-          View on GitHub
-        </a>
-      </p>
+      <section className="search-section">
+        <h2>Supply Search</h2>
+        <SupplySearch />
+      </section>
     </main>
   );
 }
