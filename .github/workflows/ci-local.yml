@@ -1,0 +1,33 @@
+name: CI Local Test
+
+on: workflow_dispatch
+
+jobs:
+  test:
+    name: Test Local
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Generate Prisma client
+        run: pnpm db:generate
+        
+      - name: Run linter
+        run: pnpm lint
+        
+      - name: Build
+        run: pnpm build
+        
+      - name: Run tests
+        run: pnpm test

@@ -1,0 +1,76 @@
+name: ADW - Issue Triggered
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  adw-process:
+    name: Process Issue with ADW
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'adw') || contains(github.event.issue.title, '[ADW]')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      
+      - name: Install Claude Code CLI
+        run: |
+          # Install latest claude CLI
+          curl -fsSL https://cli.anthropic.com/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Configure Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude config set apiKey "$ANTHROPIC_API_KEY"
+      
+      - name: Run ADW Plan + Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          echo "Processing issue #$ISSUE_NUMBER: $ISSUE_TITLE"
+          python adws/adw_plan_build.py "$ISSUE_NUMBER"
+      
+      - name: Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the ADW ID from the latest agents directory
+          ADW_ID=$(ls -t agents/ | head -n1)
+          if [ -n "$ADW_ID" ]; then
+            python adws/adw_pr.py "${{ github.event.issue.number }}" "$ADW_ID"
+          fi
+      
+      - name: Comment on issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 ADW ha procesado esta issue. Se ha creado una rama con la implementación.'
+            })

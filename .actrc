@@ -4,8 +4,11 @@
 # Use Node.js image (lighter than full ubuntu)
 -P ubuntu-latest=node:20-bullseye
 
-# Secrets (opcional - para CI con tokens)
--s GITHUB_TOKEN=ghp_dummy_token_for_testing
+# Secrets - Required for GitHub Actions marketplace and GitHub API
+# GITHUB_TOKEN: Classic token with 'repo' and 'workflow' scopes
+# ANTHROPIC_API_KEY: From https://console.anthropic.com/settings/keys
+-s GITHUB_TOKEN=${GITHUB_TOKEN}
+-s ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
 # Default workflow
 -W .github/workflows/ci.yml

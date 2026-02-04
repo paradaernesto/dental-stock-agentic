@@ -46,6 +46,54 @@ Available in `.claude/commands/`:
 | `/commit` | Generate commit message |
 | `/pull_request` | Create PR |
 
+## Autonomous GitHub Issues → ADW 🤖
+
+Este proyecto soporta **agentic coding autónomo**. Cuando creas una issue en GitHub con la label `adw` o incluyes `[ADW]` en el título, se dispara automáticamente:
+
+```
+GitHub Issue (label: adw) 
+    ↓
+GitHub Actions workflow
+    ↓
+ADW Plan → Build → Test
+    ↓
+Pull Request automático
+```
+
+### Setup para modo autónomo
+
+1. **Obtener API Keys:**
+   - GitHub Token: https://github.com/settings/tokens (scopes: `repo`, `workflow`)
+   - Anthropic API Key: https://console.anthropic.com/settings/keys
+
+2. **Configurar secrets en el repositorio:**
+   ```
+   Settings → Secrets and variables → Actions → New repository secret
+   
+   ANTHROPIC_API_KEY = sk-ant-...
+   ```
+
+3. **Crear una issue con ADW:**
+   - Título: `[ADW] Agregar feature de búsqueda de supplies`
+   - O agregar label: `adw`
+   - Describe lo que necesitas en el cuerpo de la issue
+
+4. **El workflow se ejecuta automáticamente** y crea una PR con la implementación.
+
+### Testing local del workflow
+
+```bash
+# Configurar variables
+cp .env.example .env
+# Editar .env con tus tokens
+
+# Testear workflow de issues localmente
+./scripts/act-issues.sh 42
+
+# O testear el workflow completo
+./scripts/act-local.sh test
+```
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -152,6 +200,14 @@ Requirements: Docker must be running.
 
 ## Contributing (Agentic Style)
 
+### Modo Autónomo (Recomendado)
+
+1. **Create a GitHub issue** with label `adw` or `[ADW]` in title
+2. **ADW ejecuta automáticamente** vía GitHub Actions
+3. **Revisa la PR generada** y aprueba si está correcta
+
+### Modo Manual (Desarrollo local)
+
 1. **Create a GitHub issue** describing what you need
 2. **Run ADW**: `python adws/adw_plan_build.py <issue-number>`
 3. **Review the generated spec** in `specs/`
@@ -159,7 +215,7 @@ Requirements: Docker must be running.
 5. **Tests run automatically**
 6. **PR is created** for final review
 
-Or manually:
+### Modo Manual (con Claude CLI):
 
 1. **Pick a command template** from `.claude/commands/`
 2. **Generate a plan** in `specs/`
