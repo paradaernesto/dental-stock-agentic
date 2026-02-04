@@ -135,6 +135,10 @@ jobs:
         run: |
           echo "🔍 Verifying implementation quality..."
           
+          # Generate Prisma client (ADW may have modified schema)
+          echo "Generating Prisma client..."
+          pnpm db:generate || { echo "❌ Prisma generate failed"; exit 1; }
+          
           # Run lint
           echo "Running lint..."
           pnpm lint || { echo "❌ Lint failed"; exit 1; }
