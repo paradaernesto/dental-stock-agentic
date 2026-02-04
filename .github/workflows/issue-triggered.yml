@@ -78,37 +78,56 @@ jobs:
           echo "Using Claude at: $CLAUDE_CODE_PATH"
           python adws/adw_plan_build.py "$ISSUE_NUMBER"
       
-      - name: Commit and Push Changes
+      - name: Commit, Push and Create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get branch name from the latest agents state
+          # Get ADW info from the latest agents state
           ADW_ID=$(ls -t agents/ | head -n1)
           BRANCH_NAME=$(cat "agents/$ADW_ID/adw_state.json" | grep -o '"branch_name": "[^"]*"' | cut -d'"' -f4)
           
-          if [ -n "$BRANCH_NAME" ]; then
-            git config user.name "ADW Bot"
-            git config user.email "adw@example.com"
-            git checkout "$BRANCH_NAME" 2>/dev/null || git checkout -b "$BRANCH_NAME"
-            git add -A
-            git commit -m "feat: implement issue #${{ github.event.issue.number }}
+          if [ -z "$BRANCH_NAME" ]; then
+            echo "❌ Could not determine branch name"
+            exit 1
+          fi
+          
+          echo "🔹 ADW ID: $ADW_ID"
+          echo "🌿 Branch: $BRANCH_NAME"
+          
+          # Configure git
+          git config user.name "ADW Bot"
+          git config user.email "adw@example.com"
+          
+          # Checkout/create branch
+          git checkout "$BRANCH_NAME" 2>/dev/null || git checkout -b "$BRANCH_NAME"
+          
+          # Stage and commit changes
+          git add -A
+          git commit -m "feat: implement issue #${{ github.event.issue.number }}
 
 ADW ID: $ADW_ID
 Issue: ${{ github.event.issue.title }}
 
-Changes made by Claude Code ADW" || echo "No changes to commit"
-            git push origin "$BRANCH_NAME"
-          fi
-      
-      - name: Create Pull Request
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Get the ADW ID from the latest agents directory
-          ADW_ID=$(ls -t agents/ | head -n1)
-          if [ -n "$ADW_ID" ]; then
-            python adws/adw_pr.py "${{ github.event.issue.number }}" "$ADW_ID"
-          fi
+Changes made by Claude Code ADW" || echo "⚠️ No changes to commit"
+          
+          # Push branch
+          echo "🚀 Pushing branch..."
+          git push -u origin "$BRANCH_NAME"
+          
+          # Create PR using gh CLI
+          echo "📝 Creating pull request..."
+          gh pr create \
+            --title "${{ github.event.issue.title }}" \
+            --body "## Implementation for Issue #${{ github.event.issue.number }}
+
+**ADW ID:** $ADW_ID
+
+This PR implements the changes specified in the ADW spec.
+
+Closes #${{ github.event.issue.number }}" \
+            --base main \
+            --head "$BRANCH_NAME" \
+            || echo "⚠️ PR may already exist"
       
       - name: Comment on issue
         uses: actions/github-script@v7
