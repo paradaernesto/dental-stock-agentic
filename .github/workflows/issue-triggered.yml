@@ -55,25 +55,19 @@ jobs:
             
             # Configure Kimi API key
             mkdir -p ~/.kimi
-            cat > ~/.kimi/config.toml << EOF
-default_model = "kimi-code/kimi-for-coding"
-default_thinking = true
-
-[models."kimi-code/kimi-for-coding"]
-provider = "managed:kimi-code"
-model = "kimi-for-coding"
-max_context_size = 262144
-capabilities = ["image_in", "video_in", "thinking"]
-
-[providers."managed:kimi-code"]
-type = "kimi"
-base_url = "https://api.kimi.com/coding/v1"
-api_key = "$KIMI_API_KEY"
-
-[loop_control]
-max_steps_per_turn = 100
-max_retries_per_step = 3
-EOF
+            echo 'default_model = "kimi-code/kimi-for-coding"' > ~/.kimi/config.toml
+            echo 'default_thinking = true' >> ~/.kimi/config.toml
+            echo '' >> ~/.kimi/config.toml
+            echo '[models."kimi-code/kimi-for-coding"]' >> ~/.kimi/config.toml
+            echo 'provider = "managed:kimi-code"' >> ~/.kimi/config.toml
+            echo 'model = "kimi-for-coding"' >> ~/.kimi/config.toml
+            echo 'max_context_size = 262144' >> ~/.kimi/config.toml
+            echo 'capabilities = ["image_in", "video_in", "thinking"]' >> ~/.kimi/config.toml
+            echo '' >> ~/.kimi/config.toml
+            echo '[providers."managed:kimi-code"]' >> ~/.kimi/config.toml
+            echo 'type = "kimi"' >> ~/.kimi/config.toml
+            echo 'base_url = "https://api.kimi.com/coding/v1"' >> ~/.kimi/config.toml
+            echo "api_key = \"$KIMI_API_KEY\"" >> ~/.kimi/config.toml
             
             echo "KIMI_BIN=$KIMI_BIN" >> $GITHUB_ENV
             echo "$HOME/.local/bin" >> $GITHUB_PATH
