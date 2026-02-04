@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import type { Supply } from "@prisma/client";
+import type { SupplyDTO } from "@/lib/types/supplies";
 
 export interface SuppliesListProps {
-  supplies: Supply[];
+  supplies: SupplyDTO[];
   isLoading?: boolean;
   error?: string | null;
   emptyMessage?: string;
@@ -12,6 +12,7 @@ export interface SuppliesListProps {
 
 /**
  * Component to display a list of supplies
+ * Uses SupplyDTO type instead of Prisma's Supply to avoid client-side Prisma dependency
  */
 export function SuppliesList({
   supplies,
@@ -49,20 +50,16 @@ export function SuppliesList({
         <thead>
           <tr>
             <th>Name</th>
-            <th>Code</th>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Min Stock</th>
+            <th>Category</th>
+            <th>Stock</th>
+            <th>Minimum Stock</th>
           </tr>
         </thead>
         <tbody>
           {supplies.map((supply) => (
             <tr key={supply.id} data-testid={`supply-row-${supply.id}`}>
               <td className="supply-name">{supply.name}</td>
-              <td className="supply-code">{supply.code}</td>
-              <td className="supply-description">
-                {supply.description || "-"}
-              </td>
+              <td className="supply-category">{supply.code}</td>
               <td className="supply-quantity">{supply.quantity}</td>
               <td className="supply-min-stock">{supply.minStock}</td>
             </tr>

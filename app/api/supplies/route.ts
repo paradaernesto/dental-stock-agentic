@@ -1,27 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchSupplies } from "@/lib/services/supplies";
+import { getAllSupplies } from "@/lib/services/supplies";
 import {
-  searchSuppliesSchema,
-  sanitizeSearchQuery,
+  getSuppliesSchema,
+  sanitizePaginationParams,
 } from "@/lib/validations/supplies";
 import type { SupplyDTO, GetSuppliesResult } from "@/lib/types/supplies";
 
 /**
- * GET /api/supplies/search?q={query}&page={page}&limit={limit}
+ * GET /api/supplies?page={page}&limit={limit}
  *
- * Search supplies by name or code
+ * List all supplies with pagination
  */
 export async function GET(request: NextRequest) {
   try {
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const rawQuery = searchParams.get("q") ?? "";
     const rawPage = searchParams.get("page") ?? "1";
     const rawLimit = searchParams.get("limit") ?? "20";
 
     // Validate input using Zod
-    const validationResult = searchSuppliesSchema.safeParse({
-      query: rawQuery,
+    const validationResult = getSuppliesSchema.safeParse({
       page: rawPage,
       limit: rawLimit,
     });
@@ -29,23 +27,22 @@ export async function GET(request: NextRequest) {
     if (!validationResult.success) {
       return NextResponse.json(
         {
-          error: "Invalid search parameters",
+          error: "Invalid query parameters",
           details: validationResult.error.flatten().fieldErrors,
         },
         { status: 400 }
       );
     }
 
-    const { query, page, limit } = validationResult.data;
+    const { page, limit } = validationResult.data;
 
-    // Sanitize the search query
-    const sanitizedQuery = sanitizeSearchQuery(query ?? "");
+    // Sanitize the pagination parameters
+    const sanitizedParams = sanitizePaginationParams(page, limit);
 
-    // Perform the search
-    const result = await searchSupplies({
-      query: sanitizedQuery,
-      page,
-      limit,
+    // Fetch supplies
+    const result = await getAllSupplies({
+      page: sanitizedParams.page,
+      limit: sanitizedParams.limit,
     });
 
     // Convert Supply objects to SupplyDTO (serialize dates to strings)
@@ -69,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
-    console.error("Search supplies error:", error);
+    console.error("Get supplies error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
