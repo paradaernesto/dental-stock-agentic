@@ -1,6 +1,5 @@
-import { PrismaClient, Supply } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { Supply } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
 export interface SearchSuppliesResult {
   supplies: Supply[];

@@ -1,11 +1,11 @@
-"use client";
-
-import { InventoryDashboard } from "@/app/components/InventoryDashboard";
+import { redirect } from "next/navigation";
 
 /**
- * Dashboard page component
- * Renders the inventory dashboard with Ant Design components
+ * Dashboard page - Redirects to root
+ * 
+ * This route is kept for backward compatibility.
+ * The dashboard now lives at the root route (/).
  */
 export default function DashboardPage() {
-  return <InventoryDashboard />;
+  redirect("/");
 }

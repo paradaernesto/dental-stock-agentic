@@ -1,7 +1,6 @@
-import { PrismaClient, StockMovement, Supply } from "@prisma/client";
+import { StockMovement, Supply } from "@prisma/client";
 import { StockMovementType } from "@/lib/validations/stock-movements";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/db";
 
 export interface CreateStockMovementInput {
   supplyId: string;

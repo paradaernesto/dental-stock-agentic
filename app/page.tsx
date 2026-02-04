@@ -1,16 +1,13 @@
+"use client";
+
+import { InventoryDashboard } from "@/app/components/InventoryDashboard";
+
+/**
+ * Home page - Inventory Dashboard
+ * 
+ * The root route renders the inventory dashboard directly,
+ * providing immediate access to the main functionality.
+ */
 export default function Home() {
-  return (
-    <main>
-      <h1>Dental Inventory System</h1>
-      <p>Welcome! The system is bootstrapped and ready for development.</p>
-      <p>
-        <a href="/dashboard">Go to Dashboard</a>
-      </p>
-      <p>
-        <a href="https://github.com/yourusername/dental-inventory">
-          View on GitHub
-        </a>
-      </p>
-    </main>
-  );
+  return <InventoryDashboard />;
 }
