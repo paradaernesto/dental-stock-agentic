@@ -138,6 +138,7 @@ export async function initializeSchema(prisma: PrismaClient): Promise<void> {
         supplyId TEXT NOT NULL,
         type TEXT NOT NULL CHECK(type IN ('IN', 'OUT')),
         quantity INTEGER NOT NULL,
+        reason TEXT,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (supplyId) REFERENCES Supply(id) ON DELETE CASCADE
       )
@@ -152,6 +153,16 @@ export async function initializeSchema(prisma: PrismaClient): Promise<void> {
     await prisma.$executeRaw`
       CREATE INDEX IF NOT EXISTS idx_stockmovement_createdAt ON StockMovement(createdAt)
     `;
+
+    // Migration: Add reason column to existing StockMovement tables (for backward compatibility)
+    try {
+      await prisma.$executeRaw`
+        ALTER TABLE StockMovement ADD COLUMN reason TEXT
+      `;
+    } catch (error) {
+      // Column already exists or other error - ignore
+      // SQLite will throw an error if the column already exists
+    }
   } catch (error) {
     console.error("Failed to initialize database schema:", error);
     throw new Error(
