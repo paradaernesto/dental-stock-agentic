@@ -88,7 +88,7 @@ jobs:
           echo "Starting ADW..."
           python3 adws/adw_plan_build.py "$ISSUE_NUMBER"
       
-      - name: Commit, Push and Create PR
+      - name: Commit and Push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -121,25 +121,42 @@ jobs:
           echo "Pushing branch..."
           git push -u origin "$BRANCH_NAME"
           
-          # Create PR using gh CLI
-          echo "Creating pull request..."
-          gh pr create \
-            --title "${{ github.event.issue.title }}" \
-            --body "## Implementation for Issue #${{ github.event.issue.number }}" \
-            --body "ADW ID: $ADW_ID" \
-            --body "This PR implements the changes specified in the ADW spec." \
-            --body "Closes #${{ github.event.issue.number }}" \
-            --base main \
-            --head "$BRANCH_NAME" \
-            || echo "PR may already exist"
+          echo "Branch pushed: $BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+      
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.PAT_ADW || secrets.GITHUB_TOKEN }}
+        run: |
+          ADW_ID=$(ls -t agents/ | head -n1)
+          BRANCH_NAME_RAW=$(cat "agents/$ADW_ID/adw_state.json" | grep -o '"branch_name": "[^"]*"' | cut -d'"' -f4)
+          BRANCH_NAME=$(echo "$BRANCH_NAME_RAW" | iconv -f UTF-8 -t ASCII//TRANSLIT 2>/dev/null || echo "$BRANCH_NAME_RAW")
+          
+          # Try to create PR (requires PAT_ADW, GITHUB_TOKEN can't create PRs)
+          if [ -n "${{ secrets.PAT_ADW }}" ]; then
+            echo "Creating PR with PAT..."
+            gh pr create \
+              --title "${{ github.event.issue.title }}" \
+              --body "## Implementation for Issue #${{ github.event.issue.number }}" \
+              --body "ADW ID: $ADW_ID" \
+              --body "This PR implements the changes specified in the ADW spec." \
+              --body "Closes #${{ github.event.issue.number }}" \
+              --base main \
+              --head "$BRANCH_NAME" || echo "PR may already exist"
+          else
+            echo "⚠️ PR not created: Create PAT_ADW secret or manually create PR at:"
+            echo "https://github.com/${{ github.repository }}/compare/main...$BRANCH_NAME"
+          fi
       
       - name: Comment on issue
         uses: actions/github-script@v7
         with:
           script: |
+            const branchName = process.env.BRANCH_NAME || 'feat-' + context.issue.number + '-adw-implementation';
+            const prUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/compare/main...${branchName}`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🤖 ADW ha procesado esta issue. Se ha creado una rama con la implementación.'
-            })
+              body: `🤖 ADW ha procesado esta issue.\n\n✅ Rama creada: \`${branchName}\`\n\n📝 Para crear el PR manualmente: [Crear Pull Request](${prUrl})\n\n_Nota: Para crear PRs automáticamente, configura el secret \`PAT_ADW\` con un Personal Access Token._`
+            });
