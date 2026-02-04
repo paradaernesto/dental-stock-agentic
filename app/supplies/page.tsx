@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import { SearchBar } from "@/app/components/SearchBar";
 import { SuppliesList } from "@/app/components/SuppliesList";
 import { Pagination } from "@/app/components/Pagination";
-import type { Supply } from "@prisma/client";
+import type { Supply } from "@/lib/types";
 
 interface SearchResult {
   supplies: Supply[];
@@ -74,11 +74,11 @@ export default function SuppliesPage() {
   return (
     <main className="supplies-page">
       <h1>Supplies Search</h1>
-      <p>Search for dental supplies by name or code</p>
+      <p>Search for dental supplies by name or category</p>
 
       <SearchBar
         onSearch={handleSearch}
-        placeholder="Search by name or code..."
+        placeholder="Search by name or category..."
         debounceMs={300}
         initialValue={query}
       />

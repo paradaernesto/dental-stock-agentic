@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Supply } from "@prisma/client";
+import type { Supply } from "@/lib/types";
 
 export interface SuppliesListProps {
   supplies: Supply[];
@@ -49,22 +49,20 @@ export function SuppliesList({
         <thead>
           <tr>
             <th>Name</th>
-            <th>Code</th>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Min Stock</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th>Stock</th>
+            <th>Minimum Stock</th>
           </tr>
         </thead>
         <tbody>
           {supplies.map((supply) => (
             <tr key={supply.id} data-testid={`supply-row-${supply.id}`}>
               <td className="supply-name">{supply.name}</td>
-              <td className="supply-code">{supply.code}</td>
-              <td className="supply-description">
-                {supply.description || "-"}
-              </td>
-              <td className="supply-quantity">{supply.quantity}</td>
-              <td className="supply-min-stock">{supply.minStock}</td>
+              <td className="supply-category">{supply.category}</td>
+              <td className="supply-unit">{supply.unit}</td>
+              <td className="supply-stock">{supply.stock}</td>
+              <td className="supply-minimum-stock">{supply.minimumStock}</td>
             </tr>
           ))}
         </tbody>
