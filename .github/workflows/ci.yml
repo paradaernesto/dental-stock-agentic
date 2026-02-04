@@ -18,11 +18,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
+        # Version is read from packageManager field in package.json
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
