@@ -32,16 +32,21 @@ def run_slash_command(
     
     cmd_parts = [claude_path, "-p", full_command]
     
+    print(f"   [DEBUG] Running: {' '.join(cmd_parts)}")
+    
     try:
         result = subprocess.run(
             cmd_parts,
             cwd=working_dir,
             capture_output=True,
             text=True,
-            timeout=600  # 10 minute timeout
+            timeout=120  # 2 minute timeout for CI
         )
         
         output = result.stdout + result.stderr
+        
+        print(f"   [DEBUG] Return code: {result.returncode}")
+        print(f"   [DEBUG] Output: {output[:200] if output else 'No output'}...")
         
         if output_file:
             Path(output_file).parent.mkdir(parents=True, exist_ok=True)
@@ -51,6 +56,8 @@ def run_slash_command(
         return result.returncode == 0, output
         
     except subprocess.TimeoutExpired:
+        print(f"   [DEBUG] Command timed out after 120s")
         return False, "Command timed out"
     except Exception as e:
+        print(f"   [DEBUG] Exception: {e}")
         return False, str(e)

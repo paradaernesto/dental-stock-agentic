@@ -37,15 +37,18 @@ def main():
     import os
     from pathlib import Path
     agents_dir = Path("agents")
+    print(f"\n🔍 Looking for ADW ID in {agents_dir.absolute()}...")
     if agents_dir.exists():
         adw_ids = sorted([d.name for d in agents_dir.iterdir() if d.is_dir()])
+        print(f"   Found agents: {adw_ids}")
         if adw_ids:
             adw_id = adw_ids[-1]
+            print(f"   Using ADW ID: {adw_id}")
         else:
             print("\n❌ Could not find ADW ID")
             return 1
     else:
-        print("\n❌ No agents directory found")
+        print(f"\n❌ No agents directory found at {agents_dir.absolute()}")
         return 1
     
     # Step 2: Build
