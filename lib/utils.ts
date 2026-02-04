@@ -30,3 +30,19 @@ export function formatDate(date: Date | string): string {
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Normalize a search term for case-insensitive partial matching
+ * Trims whitespace and converts to lowercase
+ */
+export function normalizeSearchTerm(term: string): string {
+  return term.trim().toLowerCase();
+}
+
+/**
+ * Format a supply code to uppercase with consistent spacing
+ * Example: "sup-001" -> "SUP-001"
+ */
+export function formatSupplyCode(code: string): string {
+  return code.trim().toUpperCase();
+}

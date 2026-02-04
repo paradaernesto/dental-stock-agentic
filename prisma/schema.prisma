@@ -1,5 +1,5 @@
-// Prisma schema placeholder
-// Will be populated in Spec 002: Database Schema
+// Prisma schema for Dental Stock Management System
+// Spec 002: Supply Search Feature
 
 generator client {
   provider = "prisma-client-js"
@@ -10,9 +10,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Placeholder model - will be replaced
-model Example {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
+model Supply {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  quantity    Int      @default(0)
+  unit        String   // e.g., "box", "unit", "kg", "ml"
+  unitPrice   Float
+  supplier    String?
+  category    String   // e.g., "consumables", "instruments", "materials"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@index([name])
+  @@index([category])
 }
