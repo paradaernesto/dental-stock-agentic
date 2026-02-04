@@ -8,6 +8,7 @@ Usage:
 
 import sys
 import argparse
+import re
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -16,6 +17,56 @@ from adw_modules.state import save_state, load_state
 from adw_modules.github import fetch_issue
 from adw_modules.utils import generate_adw_id, generate_branch_name, classify_issue
 from adw_modules.agent import run_slash_command
+
+
+def parse_spec_from_output(output: str) -> str:
+    """Parse spec content from AI output.
+    
+    Handles both Claude (plain markdown) and Kimi (TextPart format) outputs.
+    """
+    # Try to find spec content in TextPart format (Kimi)
+    # Pattern: TextPart(text='...content...')
+    textpart_pattern = r"TextPart\([^)]*text='([^']*)'"
+    textparts = re.findall(textpart_pattern, output, re.DOTALL)
+    
+    if textparts:
+        # Combine all TextPart contents
+        combined = "\n".join(textparts)
+        # Unescape newlines and quotes
+        combined = combined.replace('\\n', '\n').replace("\\'", "'")
+        if '# Spec' in combined or '**ADW ID:**' in combined:
+            return combined
+    
+    # Try to find content between markdown code blocks
+    codeblock_pattern = r'```markdown\n(.*?)\n```'
+    codeblocks = re.findall(codeblock_pattern, output, re.DOTALL)
+    if codeblocks:
+        for block in codeblocks:
+            if '# Spec' in block or '**ADW ID:**' in block:
+                return block
+    
+    # Look for spec header and extract from there (Claude format)
+    lines = output.split('\n')
+    spec_lines = []
+    in_spec = False
+    
+    for line in lines:
+        # Start capturing when we see the spec header
+        if line.startswith('# Spec') or line.startswith('**ADW ID:**'):
+            in_spec = True
+        # Stop at patterns that indicate end of spec or start of metadata
+        if in_spec:
+            if any(marker in line for marker in ['TurnBegin(', 'StepBegin(', 'ToolCall(', 'ThinkPart(', 'StatusUpdate(']):
+                break
+            if line.startswith('The spec is saved') or line.startswith('This spec'):
+                break
+            spec_lines.append(line)
+    
+    if spec_lines and len(spec_lines) > 5:
+        return '\n'.join(spec_lines)
+    
+    # If no spec found, return empty string
+    return ""
 
 
 def main():
@@ -56,12 +107,13 @@ def main():
     spec_file = f"specs/{spec_number:03d}-{branch_name}.md"
     print(f"📝 Spec: {spec_file}")
     
-    # Generate spec using Claude
+    # Ensure directories exist
     Path(spec_file).parent.mkdir(parents=True, exist_ok=True)
+    Path(f"agents/{adw_id}/planner").mkdir(parents=True, exist_ok=True)
     
     print("🤖 Generating spec with AI...")
     
-    # Build prompt for spec generation - IMPORTANT: Return ONLY the spec, no explanations
+    # Build prompt for spec generation
     spec_prompt = f"""Create a detailed implementation spec for this GitHub issue.
 
 Issue Title: {issue_title}
@@ -70,7 +122,9 @@ Issue Type: {issue_class}
 Issue Number: #{args.issue_number}
 ADW ID: {adw_id}
 
-IMPORTANT: Return ONLY the spec content in the exact format below. Do not add any introduction, summary, or explanation. Start directly with the spec.
+IMPORTANT: Return ONLY the spec content in markdown format. Do not add any introduction, summary, or explanation before or after the spec.
+
+Start directly with:
 
 # Spec {spec_number:03d}: {issue_title}
 
@@ -81,36 +135,35 @@ IMPORTANT: Return ONLY the spec content in the exact format below. Do not add an
 
 ## Overview
 
-[2-3 sentences describing what needs to be built]
+Describe what needs to be built (2-3 sentences based on the issue).
 
 ## Requirements
 
-- [REQ-1] [Specific functional requirement]
-- [REQ-2] [Technical requirement]
-- [REQ-3] [Data/validation requirement]
+- [REQ-1] Specific functional requirement from the issue
+- [REQ-2] Technical requirement
+- [REQ-3] Data/validation requirement
 
 ## Implementation Plan
 
-- [ ] [Specific actionable task 1]
-- [ ] [Specific actionable task 2]
-- [ ] [Specific actionable task 3]
-- [ ] [Testing task]
-- [ ] [Documentation task]
+- [ ] Analyze the codebase and understand current structure
+- [ ] Design the solution
+- [ ] Implement the core functionality
+- [ ] Add tests
+- [ ] Update documentation
 
 ## Files to Modify
 
-- `[file path]` - [What needs to change]
-- `[file path]` - [What needs to change]
+- `path/to/file.ts` - Description of changes needed
 
 ## Acceptance Criteria
 
-- [ ] [Specific testable criteria 1]
-- [ ] [Specific testable criteria 2]
-- [ ] [Specific testable criteria 3]
+- [ ] Specific testable criteria 1
+- [ ] Specific testable criteria 2
+- [ ] Specific testable criteria 3
 
 ## Notes
 
-[Any technical considerations, dependencies, or future enhancements]
+Any technical considerations or dependencies.
 """
     
     success, spec_content = run_slash_command(
@@ -119,32 +172,22 @@ IMPORTANT: Return ONLY the spec content in the exact format below. Do not add an
         output_file=f"agents/{adw_id}/planner/raw_output.txt"
     )
     
+    spec_parsed = ""
     if success and spec_content:
-        # Clean up the output to extract just the spec
-        lines = spec_content.split('\n')
-        spec_lines = []
-        in_spec = False
-        for line in lines:
-            # Start capturing when we see the spec header
-            if line.startswith('# Spec') or line.startswith('**ADW ID:**'):
-                in_spec = True
-            # Stop at certain patterns that indicate end of spec
-            if in_spec and line.startswith('The spec is saved') or line.startswith('This spec'):
-                break
-            if in_spec:
-                spec_lines.append(line)
+        # Parse the output to extract the spec
+        spec_parsed = parse_spec_from_output(spec_content)
         
-        # If we found spec content, use it; otherwise use fallback
-        if spec_lines and len(spec_lines) > 5:
-            spec_content = '\n'.join(spec_lines)
-            print(f"✅ Generated detailed spec: {spec_file}")
+        if spec_parsed and '# Spec' in spec_parsed:
+            spec_content = spec_parsed
+            print(f"✅ Generated detailed spec")
         else:
-            print(f"⚠️  AI output didn't contain valid spec format, using basic template")
+            print(f"⚠️  AI output didn't contain valid spec format")
             success = False
     else:
-        print(f"⚠️  AI spec generation failed, using basic template")
+        print(f"⚠️  AI spec generation failed")
+        success = False
     
-    if not success or not spec_lines or len(spec_lines) <= 5:
+    if not success or not spec_parsed:
         # Fallback to basic spec
         print(f"⚠️  Using basic template for spec")
         spec_content = f"""# Spec {spec_number:03d}: {issue_title}
@@ -209,7 +252,6 @@ _Generated by ADW_
     print(f"  2. Create branch: git checkout -b {branch_name}")
     print(f"  3. Build: python adws/adw_build.py {args.issue_number} {adw_id}")
     
-    # Return success - basic spec was created even if Claude command failed
     return 0
 
 

@@ -154,10 +154,40 @@ class KimiProvider(AIProvider):
         # Interpolate the command template with arguments
         prompt = self._interpolate_command(command, args)
         
-        # Kimi doesn't have slash commands, we pass everything as a prompt
-        cmd_parts = [kimi_path, "-p", prompt]
+        # Kimi uses -p for prompt and --print for non-interactive mode
+        cmd_parts = [kimi_path, "-p", prompt, "--print"]
         
-        return self._execute(cmd_parts, working_dir, output_file)
+        success, output = self._execute(cmd_parts, working_dir, output_file)
+        
+        # Parse Kimi's output format to extract useful text
+        if success:
+            output = self._parse_kimi_output(output)
+        
+        return success, output
+    
+    def _parse_kimi_output(self, output: str) -> str:
+        """Parse Kimi's output format to extract useful text content.
+        
+        Kimi outputs have format like:
+        TextPart(type='text', text='Actual content here')
+        """
+        import re
+        
+        # Extract text from TextPart
+        text_parts = []
+        pattern = r"TextPart\([^)]*text='([^']*(?:\\'[^']*)*)'"
+        matches = re.findall(pattern, output, re.DOTALL)
+        
+        for match in matches:
+            # Unescape escaped quotes
+            text = match.replace("\\'", "'")
+            text_parts.append(text)
+        
+        if text_parts:
+            return "\n\n".join(text_parts)
+        
+        # If no TextPart found, return original output
+        return output
     
     def _interpolate_command(self, command: str, args: list) -> str:
         """Interpolate command template with arguments."""
