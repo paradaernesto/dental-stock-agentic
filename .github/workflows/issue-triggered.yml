@@ -78,6 +78,28 @@ jobs:
           echo "Using Claude at: $CLAUDE_CODE_PATH"
           python adws/adw_plan_build.py "$ISSUE_NUMBER"
       
+      - name: Commit and Push Changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get branch name from the latest agents state
+          ADW_ID=$(ls -t agents/ | head -n1)
+          BRANCH_NAME=$(cat "agents/$ADW_ID/adw_state.json" | grep -o '"branch_name": "[^"]*"' | cut -d'"' -f4)
+          
+          if [ -n "$BRANCH_NAME" ]; then
+            git config user.name "ADW Bot"
+            git config user.email "adw@example.com"
+            git checkout "$BRANCH_NAME" 2>/dev/null || git checkout -b "$BRANCH_NAME"
+            git add -A
+            git commit -m "feat: implement issue #${{ github.event.issue.number }}
+
+ADW ID: $ADW_ID
+Issue: ${{ github.event.issue.title }}
+
+Changes made by Claude Code ADW" || echo "No changes to commit"
+            git push origin "$BRANCH_NAME"
+          fi
+      
       - name: Create Pull Request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
