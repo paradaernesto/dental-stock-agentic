@@ -6,6 +6,7 @@ export interface CreateStockMovementInput {
   supplyId: string;
   type: typeof StockMovementType.IN | typeof StockMovementType.OUT;
   quantity: number;
+  reason?: string;
 }
 
 export interface CreateStockMovementResult {
@@ -38,7 +39,7 @@ export class SupplyNotFoundError extends Error {
 export async function createStockMovement(
   input: CreateStockMovementInput
 ): Promise<CreateStockMovementResult> {
-  const { supplyId, type, quantity } = input;
+  const { supplyId, type, quantity, reason } = input;
 
   // Perform the stock movement within a transaction
   const result = await prisma.$transaction(async (tx) => {
@@ -74,6 +75,7 @@ export async function createStockMovement(
         supplyId,
         type,
         quantity,
+        reason,
       },
     });
 

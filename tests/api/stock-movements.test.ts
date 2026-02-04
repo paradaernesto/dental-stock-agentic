@@ -341,6 +341,95 @@ describe("POST /api/stock-movements", () => {
       supplyId: "supply-1",
       type: "OUT",
       quantity: 5,
+      reason: undefined,
     });
+  });
+
+  it("accepts movement request with reason field", async () => {
+    mockCreateStockMovement.mockResolvedValue({
+      movement: {
+        id: "movement-1",
+        supplyId: "supply-1",
+        type: "IN",
+        quantity: 10,
+        reason: "Restocked from supplier",
+        createdAt: new Date().toISOString(),
+      },
+      supply: {
+        id: "supply-1",
+        name: "Gloves",
+        code: "SUP-001",
+        quantity: 110,
+      },
+    });
+
+    const request = createRequest({
+      supplyId: "supply-1",
+      type: "IN",
+      quantity: 10,
+      reason: "Restocked from supplier",
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.movement.reason).toBe("Restocked from supplier");
+    expect(mockCreateStockMovement).toHaveBeenCalledWith({
+      supplyId: "supply-1",
+      type: "IN",
+      quantity: 10,
+      reason: "Restocked from supplier",
+    });
+  });
+
+  it("accepts movement request without reason field", async () => {
+    mockCreateStockMovement.mockResolvedValue({
+      movement: {
+        id: "movement-1",
+        supplyId: "supply-1",
+        type: "OUT",
+        quantity: 5,
+        createdAt: new Date().toISOString(),
+      },
+      supply: {
+        id: "supply-1",
+        name: "Gloves",
+        code: "SUP-001",
+        quantity: 95,
+      },
+    });
+
+    const request = createRequest({
+      supplyId: "supply-1",
+      type: "OUT",
+      quantity: 5,
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(mockCreateStockMovement).toHaveBeenCalledWith({
+      supplyId: "supply-1",
+      type: "OUT",
+      quantity: 5,
+      reason: undefined,
+    });
+  });
+
+  it("returns 400 for reason exceeding 500 characters", async () => {
+    const request = createRequest({
+      supplyId: "supply-1",
+      type: "IN",
+      quantity: 10,
+      reason: "a".repeat(501),
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("Invalid input");
+    expect(data.details.reason).toBeDefined();
   });
 });

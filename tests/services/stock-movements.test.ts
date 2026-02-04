@@ -111,6 +111,7 @@ describe("createStockMovement", () => {
         supplyId: "supply-1",
         type: "IN",
         quantity: 10,
+        reason: undefined,
       },
     });
   });
@@ -166,6 +167,123 @@ describe("createStockMovement", () => {
     expect(mockUpdate).toHaveBeenCalledWith({
       where: { id: "supply-1" },
       data: { quantity: 95 },
+    });
+  });
+
+  it("creates a movement with reason field", async () => {
+    const mockSupply = {
+      id: "supply-1",
+      name: "Gloves",
+      code: "SUP-001",
+      quantity: 100,
+      minStock: 20,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const mockMovement = {
+      id: "movement-1",
+      supplyId: "supply-1",
+      type: "IN",
+      quantity: 10,
+      reason: "Restocked from supplier",
+      createdAt: new Date(),
+    };
+
+    const mockUpdatedSupply = {
+      ...mockSupply,
+      quantity: 110,
+    };
+
+    mockTransaction.mockImplementation(async (callback) => {
+      mockFindUnique.mockResolvedValue(mockSupply);
+      mockUpdate.mockResolvedValue(mockUpdatedSupply);
+      mockCreate.mockResolvedValue(mockMovement);
+
+      return callback({
+        supply: {
+          findUnique: mockFindUnique,
+          update: mockUpdate,
+        },
+        stockMovement: {
+          create: mockCreate,
+        },
+      });
+    });
+
+    const result = await createStockMovement({
+      supplyId: "supply-1",
+      type: StockMovementType.IN,
+      quantity: 10,
+      reason: "Restocked from supplier",
+    });
+
+    expect(result.movement).toEqual(mockMovement);
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: {
+        supplyId: "supply-1",
+        type: "IN",
+        quantity: 10,
+        reason: "Restocked from supplier",
+      },
+    });
+  });
+
+  it("creates a movement without reason field when not provided", async () => {
+    const mockSupply = {
+      id: "supply-1",
+      name: "Gloves",
+      code: "SUP-001",
+      quantity: 100,
+      minStock: 20,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const mockMovement = {
+      id: "movement-1",
+      supplyId: "supply-1",
+      type: "OUT",
+      quantity: 5,
+      reason: null,
+      createdAt: new Date(),
+    };
+
+    const mockUpdatedSupply = {
+      ...mockSupply,
+      quantity: 95,
+    };
+
+    mockTransaction.mockImplementation(async (callback) => {
+      mockFindUnique.mockResolvedValue(mockSupply);
+      mockUpdate.mockResolvedValue(mockUpdatedSupply);
+      mockCreate.mockResolvedValue(mockMovement);
+
+      return callback({
+        supply: {
+          findUnique: mockFindUnique,
+          update: mockUpdate,
+        },
+        stockMovement: {
+          create: mockCreate,
+        },
+      });
+    });
+
+    const result = await createStockMovement({
+      supplyId: "supply-1",
+      type: StockMovementType.OUT,
+      quantity: 5,
+    });
+
+    expect(result.movement.reason).toBeNull();
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: {
+        supplyId: "supply-1",
+        type: "OUT",
+        quantity: 5,
+        reason: undefined,
+      },
     });
   });
 

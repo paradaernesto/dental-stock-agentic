@@ -27,6 +27,7 @@ model StockMovement {
   supplyId  String
   type      StockMovementType
   quantity  Int
+  reason    String?
   createdAt DateTime         @default(now())
   supply    Supply           @relation(fields: [supplyId], references: [id], onDelete: Cascade)
 
