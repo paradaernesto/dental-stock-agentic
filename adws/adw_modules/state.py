@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Optional
 from .data_types import ADWStateData
 
 
