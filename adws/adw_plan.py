@@ -22,17 +22,16 @@ from adw_modules.agent import run_slash_command
 def parse_spec_from_output(output: str) -> str:
     """Parse spec content from AI output.
     
-    Handles both Claude (plain markdown) and Kimi (TextPart format) outputs.
+    Handles both Claude (plain markdown) and Kimi (TextPart or plain text) outputs.
     """
-    # Try to find spec content in TextPart format (Kimi)
-    # Pattern: TextPart(text='...content...')
+    import re
+    
+    # Try to find spec content in TextPart format (Kimi old format)
     textpart_pattern = r"TextPart\([^)]*text='([^']*)'"
     textparts = re.findall(textpart_pattern, output, re.DOTALL)
     
     if textparts:
-        # Combine all TextPart contents
         combined = "\n".join(textparts)
-        # Unescape newlines and quotes
         combined = combined.replace('\\n', '\n').replace("\\'", "'")
         if '# Spec' in combined or '**ADW ID:**' in combined:
             return combined
@@ -45,27 +44,33 @@ def parse_spec_from_output(output: str) -> str:
             if '# Spec' in block or '**ADW ID:**' in block:
                 return block
     
-    # Look for spec header and extract from there (Claude format)
-    lines = output.split('\n')
-    spec_lines = []
-    in_spec = False
+    # Look for spec header anywhere in the output (handles intro text before spec)
+    spec_start_idx = output.find('# Spec')
+    if spec_start_idx == -1:
+        spec_start_idx = output.find('**ADW ID:**')
     
-    for line in lines:
-        # Start capturing when we see the spec header
-        if line.startswith('# Spec') or line.startswith('**ADW ID:**'):
-            in_spec = True
-        # Stop at patterns that indicate end of spec or start of metadata
-        if in_spec:
-            if any(marker in line for marker in ['TurnBegin(', 'StepBegin(', 'ToolCall(', 'ThinkPart(', 'StatusUpdate(']):
+    if spec_start_idx != -1:
+        spec_content = output[spec_start_idx:]
+        
+        # Stop at end markers
+        for marker in ['TurnBegin(', 'StepBegin(', 'ToolCall(', 'ThinkPart(', 
+                       'StatusUpdate(', '\nStatusUpdate(', 'ToolResult(']:
+            idx = spec_content.find(marker)
+            if idx != -1:
+                spec_content = spec_content[:idx]
                 break
-            if line.startswith('The spec is saved') or line.startswith('This spec'):
+        
+        # Also check for ending phrases
+        for phrase in ['The spec is saved', 'This spec', 'Let me know if']:
+            idx = spec_content.find(phrase)
+            if idx != -1:
+                spec_content = spec_content[:idx]
                 break
-            spec_lines.append(line)
+        
+        lines = spec_content.strip().split('\n')
+        if len(lines) > 5:
+            return spec_content.strip()
     
-    if spec_lines and len(spec_lines) > 5:
-        return '\n'.join(spec_lines)
-    
-    # If no spec found, return empty string
     return ""
 
 
@@ -174,8 +179,14 @@ Any technical considerations or dependencies.
     
     spec_parsed = ""
     if success and spec_content:
+        print(f"[DEBUG] Raw output length: {len(spec_content)}")
+        print(f"[DEBUG] Raw output preview: {spec_content[:200]}...")
+        
         # Parse the output to extract the spec
         spec_parsed = parse_spec_from_output(spec_content)
+        
+        print(f"[DEBUG] Parsed spec length: {len(spec_parsed)}")
+        print(f"[DEBUG] Has '# Spec': {'# Spec' in spec_parsed}")
         
         if spec_parsed and '# Spec' in spec_parsed:
             spec_content = spec_parsed
@@ -184,7 +195,7 @@ Any technical considerations or dependencies.
             print(f"⚠️  AI output didn't contain valid spec format")
             success = False
     else:
-        print(f"⚠️  AI spec generation failed")
+        print(f"⚠️  AI spec generation failed (success={success}, has_content={bool(spec_content)})")
         success = False
     
     if not success or not spec_parsed:
