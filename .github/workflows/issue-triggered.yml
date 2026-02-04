@@ -88,7 +88,9 @@ jobs:
         run: |
           # Get ADW info from the latest agents state
           ADW_ID=$(ls -t agents/ | head -n1)
-          BRANCH_NAME=$(cat "agents/$ADW_ID/adw_state.json" | grep -o '"branch_name": "[^"]*"' | cut -d'"' -f4)
+          BRANCH_NAME_RAW=$(cat "agents/$ADW_ID/adw_state.json" | grep -o '"branch_name": "[^"]*"' | cut -d'"' -f4)
+          # Normalize branch name to ASCII (remove accents for Git compatibility)
+          BRANCH_NAME=$(echo "$BRANCH_NAME_RAW" | iconv -f UTF-8 -t ASCII//TRANSLIT 2>/dev/null || echo "$BRANCH_NAME_RAW")
           
           if [ -z "$BRANCH_NAME" ]; then
             echo "Could not determine branch name"
