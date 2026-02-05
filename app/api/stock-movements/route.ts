@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createStockMovement,
+  getStockMovementsBySupplyId,
   InsufficientStockError,
   SupplyNotFoundError,
 } from "@/lib/services/stock-movements";
@@ -109,6 +110,66 @@ export async function POST(request: NextRequest) {
 
     // Log unexpected errors
     console.error("Create stock movement error:", error);
+
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/stock-movements?supplyId={id}
+ *
+ * Fetch stock movement history for a specific supply.
+ * Returns movements ordered by creation date descending (most recent first).
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Ensure database is initialized (especially important on first request in serverless)
+    const initResult = await initializeDatabase();
+    if (!initResult.success) {
+      console.error("[API /stock-movements] Database initialization failed:", initResult.error);
+      return NextResponse.json(
+        {
+          error: "Database unavailable",
+          details: "Failed to initialize database connection",
+        },
+        { status: 503 }
+      );
+    }
+
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const supplyId = searchParams.get("supplyId");
+
+    // Validate supplyId parameter
+    if (!supplyId || supplyId.trim() === "") {
+      return NextResponse.json(
+        { error: "Invalid input", details: { supplyId: "Supply ID is required" } },
+        { status: 400 }
+      );
+    }
+
+    // Fetch stock movements for the supply
+    const movements = await getStockMovementsBySupplyId(supplyId);
+
+    return NextResponse.json(
+      { movements },
+      { status: 200 }
+    );
+  } catch (error) {
+    // Handle database-specific errors
+    if (isPrismaConnectionError(error)) {
+      const dbError = formatDatabaseError(error);
+      return NextResponse.json(
+        { error: dbError.error, details: dbError.details },
+        { status: 500 }
+      );
+    }
+
+    // Log unexpected errors
+    console.error("Get stock movements error:", error);
 
     return NextResponse.json(
       { error: "Internal server error" },
